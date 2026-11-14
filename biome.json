@@ -13,7 +13,8 @@
       "!playwright-report",
       "!ci-report.json",
       "!package-lock.json",
-      "!content/versions"
+      "!content/versions",
+      "!upstream"
     ]
   },
   "formatter": {

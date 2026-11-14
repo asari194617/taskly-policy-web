@@ -18,6 +18,16 @@ GitHub-hosted runner で lint、型検査、ユニット・コンポーネント
 
 本番デプロイには GitHub Actions secrets `CLOUDFLARE_ACCOUNT_ID`、`CLOUDFLARE_API_TOKEN`、`R2_ACCESS_KEY_ID`、`R2_SECRET_ACCESS_KEY` が必要です。R2 キーは当該バケットへの書き込みに限定し、Cloudflare API トークンは Worker 編集と関連ゾーンの最小権限にします。値はリポジトリや PR に書きません。秘密情報が足りない場合はデプロイを失敗として表示します。R2 へ `out/` をアップロード後、`cf` CLI で Worker を公開し、公開 URL の HTML、Markdown、404、noindex ヘッダーを検証します。
 
+### 初回の Cloudflare 設定
+
+1. `iy0306.com` の Cloudflare ゾーンと利用するアカウント ID を確認します。`policies.taskly.iy0306.com` が既存の別サービスを指していないことも確認します。
+2. 同じアカウントに、公開アクセスを有効にしない R2 バケット `taskly-policy-web` を作成します。Worker の `POLICY_ASSETS` バインディングだけで読み取ります。バケットの `r2.dev` 公開と R2 直接カスタムドメインは不要です。
+3. このバケットに限定した R2 の S3 互換 API キーを発行します。CI の `aws s3 sync` には一覧取得・オブジェクト読み書きが必要です。別途、Worker のデプロイとカスタムドメイン設定に必要な Cloudflare API トークンを対象アカウント・ゾーンに限定して発行します。
+4. GitHub リポジトリの Actions secrets に上記 4 件を登録します。`CLOUDFLARE_ACCOUNT_ID` は R2 エンドポイントと Worker 配備先の共通アカウント ID です。権限を広げた個人トークンや SSH 鍵を CI に渡さないでください。
+5. `worker/cloudflare.config.ts` の `domains` が目的のホスト名であることを確認し、`main` の CI 成功後に Deploy policies ワークフローを確認します。初回の公開 URL 検証が通った後だけ `POLICY_MONITOR_ENABLED=true` を設定します。
+
+ローカルでは `worker/` 内から `cf deploy --dry-run` を実行し、Worker と R2 バインディングのビルドだけを確認できます。これはリモート権限や DNS、実際の R2 オブジェクトを検証するものではありません。
+
 ## 監視・復旧
 
 Worker のログ・トレースを有効にし、R2 読み取りエラー時に構造化された `policy_asset_failure` を記録して 503 を返します。公開後は 4 件の現行文書、全保存版と Markdown、`llms.txt`、404、`X-Robots-Tag` を確認します。障害時は直前に確認済みの Git コミットをチェックアウトし、そのコミットの固定した出典から `out/` を再ビルドして R2 にアップロードします。必要に応じて Worker の前版へ戻します。保存版の URL は削除しません。

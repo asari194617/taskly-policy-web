@@ -27,13 +27,6 @@ jobs:
           revision="$(cat content/SOURCE_REVISION)"
           [[ "$revision" =~ ^[0-9a-f]{40}$ ]]
           echo "revision=$revision" >> "$GITHUB_OUTPUT"
-      - name: Check out pinned policy source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: asari194617/taskly-policy
-          ref: ${{ steps.source_ref.outputs.revision }}
-          path: upstream/taskly-policy
-          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 26.13.1
@@ -47,9 +40,16 @@ jobs:
         run: |
           node -e 'const fs=require("node:fs"); const number=Number(process.env.PR_NUMBER); const sha=process.env.PR_SHA; const repository=process.env.PR_REPOSITORY; if(!Number.isSafeInteger(number)||number<1||!/^[0-9a-f]{40}$/.test(sha)||!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) process.exit(1); fs.writeFileSync("pr.json",JSON.stringify({number,sha,repository}));'
       - run: npm ci
-      - run: node scripts/verify-upstream.mjs upstream/taskly-policy
       - run: npm run lint
       - run: npm run typecheck
+      - name: Check out pinned policy source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: asari194617/taskly-policy
+          ref: ${{ steps.source_ref.outputs.revision }}
+          path: upstream/taskly-policy
+          persist-credentials: false
+      - run: node scripts/verify-upstream.mjs upstream/taskly-policy
       - run: npm run test:coverage
       - run: npm run build
       - run: npx playwright install --with-deps chromium

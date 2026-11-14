@@ -26,6 +26,9 @@ describe("policy Markdown presentation", () => {
 
   it("removes only the duplicate preamble revision date", () => {
     const source = "# Policy\n\n2026年9月23日改訂\n\n## Changes\n\n2026年9月23日改訂";
-    expect(presentationMarkdown(source)).toBe("# Policy\n\n\n## Changes\n\n2026年9月23日改訂");
+    expect(presentationMarkdown(source, "2026-09-23")).toBe(
+      "# Policy\n\n\n## Changes\n\n2026年9月23日改訂",
+    );
+    expect(presentationMarkdown(source)).toContain("# Policy\n\n2026年9月23日改訂");
   });
 });

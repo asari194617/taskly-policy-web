@@ -85,7 +85,8 @@ jobs:
             const title = 'Production policy site health check failed';
             const issues = await github.paginate(github.rest.issues.listForRepo,
               {owner, repo, state: 'all', per_page: 100});
-            const existing = issues.find(issue => !issue.pull_request && issue.title === title);
+            const matching = issues.filter(issue => !issue.pull_request && issue.title === title);
+            const existing = matching.find(issue => issue.state === 'open') || matching[0];
             const run = `${context.serverUrl}/${owner}/${repo}/actions/runs/${context.runId}`;
             if (process.env.PROBE_RESULT === 'failure') {
               if (existing?.state === 'open') return;

@@ -6,9 +6,13 @@ function removeFrontmatter(source: string) {
   return source.replace(/^---\r?\n[\s\S]*?\r?\n---\r?\n/, "");
 }
 
-export function presentationMarkdown(source: string) {
+export function presentationMarkdown(source: string, revisionDate?: string) {
   let seenTitle = false;
   let seenSection = false;
+  const dateParts = revisionDate?.match(/^(\d{4})-(\d{2})-(\d{2})$/);
+  const duplicatedDate = dateParts
+    ? `${dateParts[1]}年${Number(dateParts[2])}月${Number(dateParts[3])}日改訂`
+    : null;
   return removeFrontmatter(source)
     .split(/\r?\n/)
     .filter((line) => {
@@ -21,15 +25,15 @@ export function presentationMarkdown(source: string) {
         line === "An official version is provided in Japanese. English is not available right now."
       )
         return false;
-      if (seenTitle && !seenSection && /^\d{4}年\d{1,2}月\d{1,2}日改訂$/.test(line)) return false;
+      if (seenTitle && !seenSection && line === duplicatedDate) return false;
       return true;
     })
     .join("\n");
 }
 
-export function renderPolicyMarkdown(source: string) {
+export function renderPolicyMarkdown(source: string, revisionDate?: string) {
   const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
-  const tokens = md.parse(presentationMarkdown(source), {});
+  const tokens = md.parse(presentationMarkdown(source, revisionDate), {});
   const headings: Heading[] = [];
   const used = new Map<string, number>();
   let titleFound = false;

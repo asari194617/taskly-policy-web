@@ -15,7 +15,7 @@ type Policy = {
 };
 
 export function PolicyView({ policy }: { policy: Policy }) {
-  const { html, headings } = renderPolicyMarkdown(policy.source);
+  const { html, headings } = renderPolicyMarkdown(policy.source, policy.revisionDate);
   return (
     <main id="main" className="document-main">
       <nav className="breadcrumbs" aria-label="パンくずリスト">
