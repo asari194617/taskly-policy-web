@@ -12,6 +12,7 @@
       "!test-results",
       "!playwright-report",
       "!ci-report.json",
+      "!pr.json",
       "!package-lock.json",
       "!content/versions",
       "!upstream"
