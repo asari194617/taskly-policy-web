@@ -1,0 +1,28 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.6.7/schema.json",
+  "files": {
+    "includes": [
+      "**",
+      "!node_modules",
+      "!.next",
+      "!**/.cloudflare",
+      "!**/.wrangler",
+      "!out",
+      "!coverage",
+      "!test-results",
+      "!playwright-report",
+      "!ci-report.json",
+      "!package-lock.json",
+      "!content/versions"
+    ]
+  },
+  "formatter": {
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100
+  },
+  "javascript": {
+    "formatter": { "quoteStyle": "double" }
+  },
+  "linter": { "enabled": true }
+}

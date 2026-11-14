@@ -1,0 +1,94 @@
+name: PR coverage comment
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  actions: read
+
+jobs:
+  comment:
+    if: github.event.workflow_run.event == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      pull-requests: write
+    steps:
+      # This job never checks out or runs code from the PR.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8
+        continue-on-error: true
+        with:
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ github.token }}
+          name: policy-coverage
+          path: report
+      - uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const fs = require('node:fs');
+            const run = context.payload.workflow_run;
+            const {owner, repo} = context.repo;
+            const read = name => {
+              const path = `report/${name}.json`;
+              if (!fs.existsSync(path)) return null;
+              if (fs.statSync(path).size > 4096) throw Error('Oversized coverage report');
+              return JSON.parse(fs.readFileSync(path, 'utf8'));
+            };
+            let metadata;
+            try { metadata = read('pr'); }
+            catch (error) { core.warning(`Invalid PR metadata: ${error}`); return; }
+            if (!metadata) { core.warning('PR metadata unavailable'); return; }
+            if (!Number.isSafeInteger(metadata.number) || metadata.number < 1 ||
+                !/^[0-9a-f]{40}$/.test(metadata.sha) ||
+                !/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(metadata.repository)) return;
+            if (run.head_repository?.full_name !== metadata.repository) return;
+            const {data: pr} = await github.rest.pulls.get({
+              owner, repo, pull_number: metadata.number,
+            });
+            if (pr.state !== 'open' || pr.head.sha !== metadata.sha ||
+                pr.head.repo?.full_name !== metadata.repository ||
+                pr.head.ref !== run.head_branch) return;
+            let report;
+            try { report = read('ci-report'); }
+            catch (error) { core.warning(`Invalid coverage report: ${error}`); }
+            const names = ['lines', 'statements', 'branches', 'functions'];
+            const metrics = report?.metrics || {};
+            const e2e = report?.e2e || {};
+            const validMetrics = names.every(name => typeof metrics[name] === 'number' &&
+              Number.isFinite(metrics[name]) && metrics[name] >= 0 && metrics[name] <= 100);
+            const validE2E = [e2e.passed, e2e.failed, e2e.skipped,
+              e2e.observedRoutes, e2e.declaredRoutes].every(value =>
+              Number.isSafeInteger(value) && value >= 0) &&
+              e2e.declaredRoutes >= 1 && e2e.observedRoutes <= e2e.declaredRoutes &&
+              e2e.failed === 0 && typeof e2e.routeCoveragePercent === 'number' &&
+              Number.isFinite(e2e.routeCoveragePercent) &&
+              Math.abs(e2e.routeCoveragePercent - 100 * e2e.observedRoutes / e2e.declaredRoutes) <= 0.01;
+            const marker = '<!-- taskly-policy-coverage -->';
+            const rows = names.map(name => validMetrics
+              ? `| ${name} | ${metrics[name].toFixed(1)}% ${metrics[name] >= 80 ? '✅' : '❌'} | 80% |`
+              : `| ${name} | Unavailable (test/setup failed) | 80% |`);
+            const body = [marker, '### Test coverage', '',
+              '| Unit/component/Worker metric | Measured coverage | Required |',
+              '| --- | ---: | ---: |', ...rows, '',
+              validE2E
+                ? `Chromium E2E: ${e2e.passed} passed, ${e2e.failed} failed, ${e2e.skipped} skipped.`
+                : 'Chromium E2E: Unavailable (test/setup failed).',
+              validE2E
+                ? `Public route checks passed on desktop and mobile: ${e2e.observedRoutes}/${e2e.declaredRoutes} (${e2e.routeCoveragePercent.toFixed(1)}%).`
+                : 'Public route checks: Unavailable (test/setup failed).',
+              'E2E route checks are a scenario metric; they are separate from source-code coverage.',
+              '', `Commit: ${metadata.sha.slice(0, 7)}`,
+              `[CI run](${run.html_url})`].join('\n');
+            const comments = await github.paginate(github.rest.issues.listComments,
+              {owner, repo, issue_number: metadata.number, per_page: 100});
+            const previous = comments.find(comment =>
+              comment.user?.type === 'Bot' && comment.body?.includes(marker));
+            if (previous) await github.rest.issues.updateComment({
+              owner, repo, comment_id: previous.id, body,
+            });
+            else await github.rest.issues.createComment({
+              owner, repo, issue_number: metadata.number, body,
+            });
+            await core.summary.addRaw(body).write();

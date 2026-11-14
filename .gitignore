@@ -1,0 +1,13 @@
+node_modules/
+.next/
+out/
+.cloudflare/
+.wrangler/
+coverage/
+playwright-report/
+test-results/
+ci-report.json
+*.tsbuildinfo
+.env
+.env.*
+!.env.example

@@ -1,0 +1,137 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: policy-ci-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  quality:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Read pinned policy source revision
+        id: source_ref
+        run: |
+          revision="$(cat content/SOURCE_REVISION)"
+          [[ "$revision" =~ ^[0-9a-f]{40}$ ]]
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+      - name: Check out pinned policy source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: asari194617/taskly-policy
+          ref: ${{ steps.source_ref.outputs.revision }}
+          path: upstream/taskly-policy
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 26.13.1
+          cache: npm
+      - name: Save PR identity for the isolated comment workflow
+        if: github.event_name == 'pull_request'
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_SHA: ${{ github.event.pull_request.head.sha }}
+          PR_REPOSITORY: ${{ github.event.pull_request.head.repo.full_name }}
+        run: |
+          node -e 'const fs=require("node:fs"); const number=Number(process.env.PR_NUMBER); const sha=process.env.PR_SHA; const repository=process.env.PR_REPOSITORY; if(!Number.isSafeInteger(number)||number<1||!/^[0-9a-f]{40}$/.test(sha)||!/^[A-Za-z0-9_.-]+\/[A-Za-z0-9_.-]+$/.test(repository)) process.exit(1); fs.writeFileSync("pr.json",JSON.stringify({number,sha,repository}));'
+      - run: npm ci
+      - run: node scripts/verify-upstream.mjs upstream/taskly-policy
+      - run: npm run lint
+      - run: npm run typecheck
+      - run: npm run test:coverage
+      - run: npm run build
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:e2e
+      - name: Verify measured coverage and public route checks
+        run: node scripts/report-ci.mjs
+      - if: always() && github.event_name == 'pull_request'
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: policy-coverage
+          path: |
+            ci-report.json
+            pr.json
+          retention-days: 14
+          if-no-files-found: warn
+      - if: always()
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
+        with:
+          name: policy-browser-evidence
+          path: |
+            test-results/
+            docs/screenshots/
+          retention-days: 14
+          if-no-files-found: ignore
+
+  screenshots:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: read
+    steps:
+      - name: Require screenshots for product changes
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const {owner, repo} = context.repo;
+            const number = context.issue.number;
+            const files = await github.paginate(github.rest.pulls.listFiles, {
+              owner, repo, pull_number: number, per_page: 100,
+            });
+            const changesProduct = files.some(({filename}) =>
+              /^(app|components|content|lib|public|worker|scripts)\//.test(filename));
+            if (!changesProduct) return;
+            const body = context.payload.pull_request.body || '';
+            const matches = [...body.matchAll(/!\[[^\]]*\]\(([^\s)]+)\)/g)];
+            const images = [];
+            for (const match of matches) {
+              const url = match[1];
+              if (/^https:\/\/github\.com\/user-attachments\/assets\/[A-Za-z0-9-]+$/.test(url) ||
+                  /^https:\/\/user-images\.githubusercontent\.com\/[A-Za-z0-9_./%-]+$/.test(url)) {
+                images.push({url, index: match.index});
+                continue;
+              }
+              const relative = url.replace(/^\.\//, '');
+              if (!/^docs\/screenshots\/[A-Za-z0-9_.-]+\.(png|jpe?g|webp)$/.test(relative)) continue;
+              if (!files.some(file => file.filename === relative &&
+                  (file.status === 'added' || file.status === 'modified'))) continue;
+              images.push({url: relative, index: match.index});
+            }
+            const desktop = body.match(/^(?:デスクトップ|desktop)[^\n]*[:：]\s*$/im);
+            const mobile = body.match(/^(?:モバイル|mobile)[^\n]*[:：]\s*$/im);
+            const desktopImage = images.find(image =>
+              desktop && mobile && image.index > desktop.index && image.index < mobile.index);
+            const mobileImage = images.find(image => mobile && image.index > mobile.index);
+            if (!desktopImage || !mobileImage || desktopImage.url === mobileImage.url) {
+              core.setFailed('Product changes require two distinct Markdown screenshots in the PR body, under the desktop and mobile labels. Use GitHub attachments or existing docs/screenshots images from this PR.');
+            }
+
+  required-ci:
+    if: always()
+    needs: [quality, screenshots]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check required jobs
+        env:
+          QUALITY_RESULT: ${{ needs.quality.result }}
+          SCREENSHOT_RESULT: ${{ needs.screenshots.result }}
+          EVENT_NAME: ${{ github.event_name }}
+        run: |
+          test "$QUALITY_RESULT" = success
+          if [ "$EVENT_NAME" = pull_request ]; then
+            test "$SCREENSHOT_RESULT" = success
+          else
+            test "$SCREENSHOT_RESULT" = skipped
+          fi

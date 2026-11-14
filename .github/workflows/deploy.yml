@@ -1,0 +1,143 @@
+name: Deploy policies
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: policy-production
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    if: >-
+      (github.event.workflow_run.conclusion == 'success' &&
+       (github.event.workflow_run.event == 'push' ||
+        github.event.workflow_run.event == 'workflow_dispatch') &&
+       github.event.workflow_run.head_branch == 'main' &&
+       github.event.workflow_run.head_repository.full_name == github.repository)
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: ${{ github.event.workflow_run.head_sha }}
+          persist-credentials: false
+      - name: Read pinned policy source revision
+        id: source_ref
+        run: |
+          revision="$(cat content/SOURCE_REVISION)"
+          [[ "$revision" =~ ^[0-9a-f]{40}$ ]]
+          echo "revision=$revision" >> "$GITHUB_OUTPUT"
+      - name: Check out pinned policy source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          repository: asari194617/taskly-policy
+          ref: ${{ steps.source_ref.outputs.revision }}
+          path: upstream/taskly-policy
+          persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 26.13.1
+          cache: npm
+      - run: npm ci
+      - run: node scripts/verify-upstream.mjs upstream/taskly-policy
+      - run: npm run build
+      - name: Require scoped production credentials
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          R2_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          R2_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+        run: |
+          for name in CLOUDFLARE_ACCOUNT_ID R2_ACCESS_KEY_ID R2_SECRET_ACCESS_KEY CLOUDFLARE_API_TOKEN; do
+            if [ -z "${!name}" ]; then
+              echo "Missing required GitHub Actions secret: $name" >&2
+              exit 1
+            fi
+          done
+      - name: Upload static assets to R2 before publishing HTML
+        env:
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          AWS_ACCESS_KEY_ID: ${{ secrets.R2_ACCESS_KEY_ID }}
+          AWS_SECRET_ACCESS_KEY: ${{ secrets.R2_SECRET_ACCESS_KEY }}
+          AWS_DEFAULT_REGION: auto
+          AWS_EC2_METADATA_DISABLED: "true"
+        run: |
+          set -euo pipefail
+          aws --version
+          endpoint="https://${CLOUDFLARE_ACCOUNT_ID}.r2.cloudflarestorage.com"
+          bucket="s3://taskly-policy-web"
+          aws s3api head-bucket --bucket taskly-policy-web --endpoint-url "$endpoint"
+          aws s3 sync out/_next/static "$bucket/_next/static" \
+            --endpoint-url "$endpoint" --no-progress \
+            --cache-control 'public,max-age=31536000,immutable'
+          aws s3 sync out "$bucket" \
+            --endpoint-url "$endpoint" --no-progress \
+            --exclude '*.html' --exclude '_next/static/*' \
+            --cache-control 'public,max-age=300'
+          aws s3 sync out "$bucket" \
+            --endpoint-url "$endpoint" --no-progress \
+            --exclude '*' --include '*.html' \
+            --cache-control 'public,max-age=300'
+      - name: Deploy the R2-backed Cloudflare Worker
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        working-directory: worker
+        run: ../node_modules/.bin/cf deploy --mode production
+      - name: Verify public HTML, Markdown, noindex, and 404
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFileSync } from 'node:fs';
+          import { createHash } from 'node:crypto';
+
+          const base = 'https://policies.taskly.iy0306.com';
+          const catalog = JSON.parse(readFileSync('content/catalog.json', 'utf8'));
+          const routes = [{ path: '/' }, { path: '/llms.txt' }];
+          for (const [slug, document] of Object.entries(catalog.documents)) {
+            routes.push({ path: `/${slug}/` });
+            for (const [version, edition] of Object.entries(document.versions)) {
+              routes.push({ path: `/${slug}/${version}/` });
+              routes.push({ path: `/${slug}/${version}.md`, sha256: edition.sha256 });
+            }
+          }
+          const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
+          async function read(path, expectedStatus = 200) {
+            let lastError;
+            for (let attempt = 0; attempt < 12; attempt += 1) {
+              try {
+                const response = await fetch(`${base}${path}`, {
+                  redirect: 'follow', signal: AbortSignal.timeout(15_000),
+                });
+                if (response.status !== expectedStatus) throw Error(`HTTP ${response.status}`);
+                if (!response.headers.get('x-robots-tag')?.includes('noindex')) {
+                  throw Error('X-Robots-Tag noindex missing');
+                }
+                return response;
+              } catch (error) {
+                lastError = error;
+                if (attempt < 11) await pause(10_000);
+              }
+            }
+            throw Error(`${path}: ${lastError}`);
+          }
+          for (const route of routes) {
+            const response = await read(route.path);
+            if (route.sha256) {
+              if (!response.headers.get('content-type')?.includes('text/markdown')) {
+                throw Error(`${route.path}: Markdown content type missing`);
+              }
+              const body = Buffer.from(await response.arrayBuffer());
+              const actual = createHash('sha256').update(body).digest('hex');
+              if (actual !== route.sha256) throw Error(`${route.path}: source hash mismatch`);
+            }
+            console.log(`Verified ${route.path}`);
+          }
+          await read('/does-not-exist/', 404);
+          console.log(`Verified ${routes.length} public routes, all policy hashes, and 404`);
+          NODE

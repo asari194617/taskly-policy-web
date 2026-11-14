@@ -1,0 +1,41 @@
+{
+  "name": "taskly-policy-web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "next dev",
+    "build": "node scripts/verify-content.mjs && next build && node scripts/publish-markdown.mjs",
+    "start": "node scripts/serve-out.mjs",
+    "typecheck": "tsc --noEmit",
+    "lint": "biome check .",
+    "format": "biome check --write .",
+    "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
+    "test:e2e": "playwright test",
+    "test:all": "npm run lint && npm run typecheck && npm run test:coverage && npm run build && npm run test:e2e"
+  },
+  "dependencies": {
+    "markdown-it": "14.1.0",
+    "next": "16.4.6",
+    "react": "19.3.1",
+    "react-dom": "19.3.1"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "2.6.7",
+    "@cloudflare/vite-plugin": "2.0.0-beta.v.17",
+    "@playwright/test": "1.65.0",
+    "@types/markdown-it": "14.1.2",
+    "@types/node": "22.19.9",
+    "@types/react": "19.2.7",
+    "@types/react-dom": "19.2.3",
+    "@vitest/coverage-v8": "3.2.4",
+    "cf": "1.0.0-beta.32",
+    "typescript": "5.9.3",
+    "vite": "7.3.8",
+    "vitest": "3.2.4"
+  },
+  "engines": {
+    "node": ">=26.12.0 <27"
+  }
+}
