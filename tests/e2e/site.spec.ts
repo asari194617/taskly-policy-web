@@ -90,6 +90,8 @@ test("capture review screenshots", async ({ page, isMobile }) => {
   const prefix = isMobile ? "mobile-dark" : "desktop-light";
   await page.goto("/");
   await page.screenshot({ path: `docs/screenshots/${prefix}-home.png`, fullPage: true });
+  await page.getByRole("button", { name: "ダークテーマを使用" }).focus();
+  await page.screenshot({ path: `docs/screenshots/${prefix}-focus.png`, fullPage: false });
   await page.goto("/privacy/");
   await page.screenshot({ path: `docs/screenshots/${prefix}-privacy.png`, fullPage: true });
 });
