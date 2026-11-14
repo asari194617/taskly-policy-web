@@ -29,11 +29,11 @@
     "@types/node": "22.19.9",
     "@types/react": "19.2.7",
     "@types/react-dom": "19.2.3",
-    "@vitest/coverage-v8": "3.2.4",
+    "@vitest/coverage-v8": "5.1.0",
     "cf": "1.0.0-beta.32",
     "typescript": "5.9.3",
     "vite": "7.3.8",
-    "vitest": "3.2.4"
+    "vitest": "5.1.0"
   },
   "engines": {
     "node": ">=26.12.0 <27"
