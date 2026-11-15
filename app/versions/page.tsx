@@ -62,11 +62,11 @@ export default function Versions() {
             </Link>
           </p>
           <ul className="policy-index">
-            {selected.policies.map(({ slug, revision, changed }) => (
+            {selected.policies.map(({ slug, title, revision, changed }) => (
               <li key={slug}>
                 <Link href={`/${slug}/${revision}/`}>
                   <span className="index-copy">
-                    <strong>{catalog.documents[slug]?.title ?? slug}</strong>
+                    <strong>{title ?? catalog.documents[slug]?.title ?? slug}</strong>
                     <span>
                       文書の版 {revision}
                       {changed ? " · この公開版で改定" : ""}

@@ -151,6 +151,12 @@ test("capture review screenshots", async ({ page, isMobile }) => {
   await page.goto("/versions/");
   await expect(page.getByRole("heading", { name: "版履歴", level: 1 })).toBeVisible();
   await page.screenshot({ path: `docs/screenshots/${prefix}-releases.png`, fullPage: true });
+  await page.goto("/versions/v2026-09-22.1-import/");
+  await expect(page.getByRole("heading", { name: "版 v2026-09-22.1-import" })).toBeVisible();
+  await page.screenshot({
+    path: `docs/screenshots/${prefix}-release-snapshot.png`,
+    fullPage: true,
+  });
   await page.goto("/");
   await page.getByRole("link", { name: "利用規約" }).focus();
   await page.screenshot({ path: `docs/screenshots/${prefix}-focus.png`, fullPage: false });

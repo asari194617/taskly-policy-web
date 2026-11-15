@@ -60,6 +60,13 @@ describe("R2 routing", () => {
     expect(policyRoute("/terms/unknown/", catalog).missing).toBe(true);
     expect(policyRoute("/unknown/", catalog).missing).toBe(true);
     expect(policyRoute("/terms/v1/history/", catalog).missing).toBe(true);
+    const archived = {
+      ...catalog,
+      documents: { ...catalog.documents, notice: { title: "お知らせ", versions: { v1: {} } } },
+    };
+    expect(policyRoute("/notice/", archived).missing).toBe(true);
+    expect(policyRoute("/notice/v1/", archived).key).toBe("viewer/index.html");
+    expect(policyRoute("/notice/v1.md", archived).key).toBe("notice/v1.md");
   });
 });
 

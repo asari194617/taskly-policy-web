@@ -44,10 +44,12 @@ if (catalog.releases?.length) {
 let editions = 0;
 for (const [slug, document] of Object.entries(catalog.documents)) {
   const current = catalog.current[slug];
-  if (!document.versions[current]) throw new Error(`${slug}: current version missing`);
-  await read(`/${slug}/`);
+  if (current && !document.versions[current]) throw new Error(`${slug}: current version missing`);
+  if (current) {
+    await read(`/${slug}/`);
+    await read(`/${slug}.md`);
+  }
   await read(`/${slug}/history/`);
-  await read(`/${slug}.md`);
   for (const [version, edition] of Object.entries(document.versions)) {
     await read(`/${slug}/${version}/`);
     const response = await read(`/${slug}/${version}.md`);

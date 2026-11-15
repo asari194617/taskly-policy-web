@@ -67,8 +67,8 @@ export default {
             "Official Japanese policy documents, available as HTML and Markdown.",
             "",
           ];
-          for (const [slug, document] of Object.entries(catalog.documents)) {
-            const version = catalog.current[slug];
+          for (const [slug, version] of Object.entries(catalog.current)) {
+            const document = catalog.documents[slug];
             lines.push(
               `- [${document.title}](${base}/${slug}/): [Markdown](${base}/${slug}/${version}.md)`,
             );

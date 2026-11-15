@@ -34,6 +34,17 @@ export function presentationMarkdown(source: string, revisionDate?: string) {
 
 export function renderPolicyMarkdown(source: string, revisionDate?: string) {
   const md = new MarkdownIt({ html: false, linkify: true, typographer: true });
+  md.disable("image");
+  const renderLink =
+    md.renderer.rules.link_open ??
+    ((tokens, index, options, _env, self) => self.renderToken(tokens, index, options));
+  md.renderer.rules.link_open = (tokens, index, options, env, self) => {
+    const href = tokens[index].attrGet("href");
+    if (href && /^https?:\/\//i.test(href)) {
+      tokens[index].attrSet("rel", "noopener noreferrer");
+    }
+    return renderLink(tokens, index, options, env, self);
+  };
   const tokens = md.parse(presentationMarkdown(source, revisionDate), {});
   const headings: Heading[] = [];
   const used = new Map<string, number>();
