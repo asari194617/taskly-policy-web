@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/verify-content.mjs && next build --webpack && node scripts/publish-markdown.mjs",
+    "build": "node scripts/verify-content.mjs && next build --webpack && node scripts/prepare-data.mjs content out",
     "start": "node scripts/serve-out.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",

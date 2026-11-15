@@ -36,6 +36,12 @@ export default function RootLayout({ children }: { children: ReactNode }) {
             </a>
           </div>
         </header>
+        <noscript>
+          <p>
+            JavaScript を利用できない場合は、<a href="/llms.txt">Markdown 版の文書一覧</a>
+            から本文を読めます。
+          </p>
+        </noscript>
         {children}
         <footer className="site-footer">
           <div className="footer-inner">

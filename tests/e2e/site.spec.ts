@@ -117,12 +117,16 @@ test("capture review screenshots", async ({ page, isMobile }) => {
   await page.emulateMedia({ colorScheme: isMobile ? "dark" : "light" });
   const prefix = isMobile ? "mobile-dark" : "desktop-light";
   await page.goto("/");
+  await expect(page.getByRole("link", { name: "利用規約" })).toBeVisible();
   await page.screenshot({ path: `docs/screenshots/${prefix}-home.png`, fullPage: true });
   await page.getByRole("link", { name: "利用規約" }).focus();
   await page.screenshot({ path: `docs/screenshots/${prefix}-focus.png`, fullPage: false });
   await page.goto("/privacy/");
+  await expect(page.getByRole("heading", { name: "プライバシーポリシー", level: 1 })).toBeVisible();
   await page.screenshot({ path: `docs/screenshots/${prefix}-privacy.png`, fullPage: true });
+  await page.screenshot({ path: `docs/screenshots/${prefix}-runtime-privacy.png`, fullPage: true });
   await page.goto("/privacy/history/2026-09-23.1/");
+  await expect(page.getByRole("heading", { name: "版 2026-09-23.1 の変更" })).toBeVisible();
   await page.screenshot({ path: `docs/screenshots/${prefix}-diff.png`, fullPage: false });
   await page.goto("/security/2026-09-22.1.md");
   await page.screenshot({

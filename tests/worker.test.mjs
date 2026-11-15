@@ -1,6 +1,11 @@
 import { describe, expect, it, vi } from "vitest";
 import worker from "../worker/index.mjs";
-import { cacheControl, contentType, objectKey } from "../worker/routing.mjs";
+import { cacheControl, contentType, objectKey, policyRoute } from "../worker/routing.mjs";
+
+const catalog = {
+  current: { terms: "v1" },
+  documents: { terms: { title: "利用規約", versions: { v1: {} } } },
+};
 
 function bucket(objects = {}) {
   return {
@@ -8,6 +13,7 @@ function bucket(objects = {}) {
       if (!(key in objects)) return null;
       return {
         body: objects[key],
+        json: async () => JSON.parse(objects[key]),
         httpEtag: '"etag"',
         writeHttpMetadata: (headers) => headers.set("Content-Language", "ja"),
       };
@@ -39,8 +45,15 @@ describe("R2 routing", () => {
     expect(contentType("x.unknown")).toBe("application/octet-stream");
     expect(cacheControl("_next/static/x.js")).toContain("immutable");
     expect(cacheControl("terms/2026-09-22.1.md")).toContain("immutable");
-    expect(cacheControl("terms/2026-09-22.1/index.html")).toContain("immutable");
+    expect(cacheControl("viewer/index.html")).toContain("max-age=300");
     expect(cacheControl("terms/index.html")).toContain("max-age=300");
+    expect(policyRoute("/terms/v1/", catalog).key).toBe("viewer/index.html");
+    expect(policyRoute("/terms/v1.md", catalog).key).toBe("terms/v1.md");
+    expect(policyRoute("/terms.md", catalog).key).toBe("terms/v1.md");
+    expect(policyRoute("/terms/history/", catalog).key).toBe("viewer/index.html");
+    expect(policyRoute("/terms/unknown/", catalog).missing).toBe(true);
+    expect(policyRoute("/unknown/", catalog).missing).toBe(true);
+    expect(policyRoute("/terms/v1/history/", catalog).missing).toBe(true);
   });
 });
 
@@ -58,7 +71,11 @@ describe("R2 Worker responses", () => {
   });
 
   it("supports HEAD, real 404 and disallows writes", async () => {
-    const store = bucket({ "404.html": "missing", "terms/index.html": "terms" });
+    const store = bucket({
+      "404.html": "missing",
+      "viewer/index.html": "terms",
+      "data/catalog.json": JSON.stringify(catalog),
+    });
     const head = await worker.fetch(
       new Request("https://policies.taskly.iy0306.com/terms/", { method: "HEAD" }),
       { POLICY_ASSETS: store },
@@ -92,5 +109,77 @@ describe("R2 Worker responses", () => {
       },
     });
     expect(broken.status).toBe(503);
+  });
+
+  it("accepts a newly published version without changing Worker code", async () => {
+    const updated = {
+      current: { terms: "v2" },
+      documents: { terms: { title: "利用規約", versions: { v1: {}, v2: {} } } },
+    };
+    const store = bucket({
+      "data/catalog.json": JSON.stringify(updated),
+      "viewer/index.html": "viewer",
+      "terms/v2.md": "# New terms",
+    });
+    const html = await worker.fetch(new Request("https://policies.taskly.iy0306.com/terms/v2/"), {
+      POLICY_ASSETS: store,
+    });
+    expect(html.status).toBe(200);
+    expect(await html.text()).toBe("viewer");
+    const markdown = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/terms.md"),
+      {
+        POLICY_ASSETS: store,
+      },
+    );
+    expect(markdown.status).toBe(200);
+    expect(await markdown.text()).toBe("# New terms");
+    expect(markdown.headers.get("Cache-Control")).toBe("no-store");
+  });
+
+  it("serves the live catalog, dynamically generated AI index, and diff routes", async () => {
+    const updated = {
+      current: { terms: "v2", notice: "v1" },
+      documents: {
+        terms: {
+          title: "利用規約",
+          versions: { v1: { effectiveDate: "2026-01-01" }, v2: { effectiveDate: "2026-02-01" } },
+        },
+        notice: { title: "新しい方針", versions: { v1: {} } },
+      },
+    };
+    const store = bucket({
+      "data/catalog.json": JSON.stringify(updated),
+      "viewer/index.html": "viewer",
+      "404.html": "missing",
+    });
+    const env = { POLICY_ASSETS: store };
+    const catalogResponse = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/data/catalog.json"),
+      env,
+    );
+    expect(catalogResponse.headers.get("Cache-Control")).toBe("no-store");
+    expect((await catalogResponse.json()).current.notice).toBe("v1");
+    const llms = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/llms.txt"),
+      env,
+    );
+    expect(await llms.text()).toContain("/notice/v1.md");
+    expect(llms.headers.get("Cache-Control")).toBe("no-store");
+    const newDocument = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/notice/"),
+      env,
+    );
+    expect(newDocument.status).toBe(200);
+    const diff = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/terms/history/v2/"),
+      env,
+    );
+    expect(diff.status).toBe(200);
+    const noDiff = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/terms/history/v1/"),
+      env,
+    );
+    expect(noDiff.status).toBe(404);
   });
 });
