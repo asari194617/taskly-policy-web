@@ -107,6 +107,27 @@ test("version query redirects to the immutable document URL", async ({ page }) =
   await expect(page.getByRole("heading", { name: "利用規約", level: 1 })).toBeVisible();
 });
 
+test("Release history shows the current snapshot and its previous version", async ({ page }) => {
+  await page.goto("/versions/");
+  await expect(page.getByRole("heading", { name: "版履歴", level: 1 })).toBeVisible();
+  await expect(page.getByText("v2026-09-23.1-import")).toBeVisible();
+  await expect(page.getByText("v2026-09-22.1-import")).toBeVisible();
+  await page.getByRole("link", { name: "この版の文書を見る" }).first().click();
+  await expect(page.getByRole("heading", { name: "版 v2026-09-23.1-import" })).toBeVisible();
+  await expect(page.getByRole("link", { name: /プライバシーポリシー/ })).toHaveAttribute(
+    "href",
+    "/privacy/2026-09-23.1/",
+  );
+});
+
+test("Release query selects a frozen policy snapshot", async ({ page }) => {
+  await page.goto("/?v=v2026-09-22.1-import");
+  await expect(page).toHaveURL(/\/versions\/v2026-09-22\.1-import\/$/);
+  await expect(page.getByRole("heading", { name: "版 v2026-09-22.1-import" })).toBeVisible();
+  await page.goto("/privacy/?v=v2026-09-22.1-import");
+  await expect(page).toHaveURL(/\/privacy\/2026-09-22\.1\/$/);
+});
+
 test("unknown route is a real 404", async ({ page }) => {
   const response = await page.goto("/does-not-exist/");
   expect(response?.status()).toBe(404);
@@ -127,6 +148,10 @@ test("capture review screenshots", async ({ page, isMobile }) => {
   await page.goto("/");
   await expect(page.getByRole("link", { name: "利用規約" })).toBeVisible();
   await page.screenshot({ path: `docs/screenshots/${prefix}-home.png`, fullPage: true });
+  await page.goto("/versions/");
+  await expect(page.getByRole("heading", { name: "版履歴", level: 1 })).toBeVisible();
+  await page.screenshot({ path: `docs/screenshots/${prefix}-releases.png`, fullPage: true });
+  await page.goto("/");
   await page.getByRole("link", { name: "利用規約" }).focus();
   await page.screenshot({ path: `docs/screenshots/${prefix}-focus.png`, fullPage: false });
   await page.goto("/privacy/");

@@ -27,6 +27,20 @@ await read("/");
 await read("/llms.txt");
 const catalog = await (await read("/data/catalog.json")).json();
 if (catalog.schemaVersion !== 1) throw new Error("Unsupported published catalog");
+if (catalog.releases?.length) {
+  await read("/versions/");
+  for (const release of catalog.releases) {
+    await read(`/versions/${release.version}/`);
+  }
+  const selected = catalog.releases.at(-1);
+  const alias = await fetch(`${base}/?v=${encodeURIComponent(selected.version)}`, {
+    redirect: "manual",
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (alias.status !== 308 || alias.headers.get("location") !== `/versions/${selected.version}/`) {
+    throw new Error("Release version query does not select its snapshot");
+  }
+}
 let editions = 0;
 for (const [slug, document] of Object.entries(catalog.documents)) {
   const current = catalog.current[slug];

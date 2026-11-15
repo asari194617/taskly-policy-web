@@ -52,5 +52,33 @@
         }
       }
     }
-  }
+  },
+  "releases": [
+    {
+      "version": "v2026-09-22.1-import",
+      "status": "current",
+      "publishedAt": "2026-11-15T12:57:00Z",
+      "effectiveAt": "2026-09-22T00:00:00+09:00",
+      "sourceSha": "08c64cae98a217d137926c904f25aab6b4e83a4e",
+      "policies": [
+        { "slug": "terms", "revision": "2026-09-22.1", "changed": true },
+        { "slug": "privacy", "revision": "2026-09-22.1", "changed": true },
+        { "slug": "security", "revision": "2026-09-22.1", "changed": true }
+      ]
+    },
+    {
+      "version": "v2026-09-23.1-import",
+      "status": "current",
+      "publishedAt": "2026-11-15T12:58:00Z",
+      "effectiveAt": "2026-09-23T00:00:00+09:00",
+      "sourceSha": "6aba6620a697748d1f15f58ca613ad6139215c43",
+      "policies": [
+        { "slug": "terms", "revision": "2026-09-22.1", "changed": false },
+        { "slug": "privacy", "revision": "2026-09-23.1", "changed": true },
+        { "slug": "security", "revision": "2026-09-22.1", "changed": false },
+        { "slug": "continuity", "revision": "88536b5", "changed": true }
+      ]
+    }
+  ],
+  "upcoming": []
 }

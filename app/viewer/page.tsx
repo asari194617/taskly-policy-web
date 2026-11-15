@@ -72,6 +72,7 @@ function PolicyHistory({ catalog, slug }: { catalog: Catalog; slug: PolicySlug }
             <div className="history-entry">
               <strong>版 {entry.version}</strong>
               {entry.current && <span className="edition-pill">現行版</span>}
+              {entry.upcoming && <span className="edition-pill">改正予定版</span>}
               {entry.date && <time dateTime={entry.date}>{entry.date}</time>}
             </div>
             <div className="history-links">
@@ -286,6 +287,11 @@ export default function Viewer() {
         title: catalog.documents[slug].title,
         version,
         current: version === catalog.current[slug],
+        upcoming: Boolean(
+          catalog.upcoming?.some((release) =>
+            release.policies.some((policy) => policy.slug === slug && policy.revision === version),
+          ),
+        ),
         effectiveDate: edition.effectiveDate,
         revisionDate: edition.revisionDate,
         markdownPath: `/${slug}/${version}.md`,

@@ -5,6 +5,9 @@ import { cacheControl, contentType, objectKey, policyRoute } from "../worker/rou
 const catalog = {
   current: { terms: "v1" },
   documents: { terms: { title: "利用規約", versions: { v1: {} } } },
+  releases: [
+    { version: "vrelease1", policies: [{ slug: "terms", revision: "v1", changed: true }] },
+  ],
 };
 
 function bucket(objects = {}) {
@@ -51,6 +54,9 @@ describe("R2 routing", () => {
     expect(policyRoute("/terms/v1.md", catalog).key).toBe("terms/v1.md");
     expect(policyRoute("/terms.md", catalog).key).toBe("terms/v1.md");
     expect(policyRoute("/terms/history/", catalog).key).toBe("viewer/index.html");
+    expect(policyRoute("/versions/", catalog).key).toBe("versions/index.html");
+    expect(policyRoute("/versions/vrelease1/", catalog).key).toBe("versions/index.html");
+    expect(policyRoute("/versions/unknown/", catalog).missing).toBe(true);
     expect(policyRoute("/terms/unknown/", catalog).missing).toBe(true);
     expect(policyRoute("/unknown/", catalog).missing).toBe(true);
     expect(policyRoute("/terms/v1/history/", catalog).missing).toBe(true);
@@ -150,18 +156,35 @@ describe("R2 Worker responses", () => {
     expect(query.status).toBe(308);
     expect(query.headers.get("Location")).toBe("/terms/v1/");
     expect(query.headers.get("X-Robots-Tag")).toBe("noindex");
+    const releaseQuery = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/terms/?v=vrelease1"),
+      env,
+    );
+    expect(releaseQuery.status).toBe(308);
+    expect(releaseQuery.headers.get("Location")).toBe("/terms/v1/");
+    const indexQuery = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/?v=vrelease1"),
+      env,
+    );
+    expect(indexQuery.status).toBe(308);
+    expect(indexQuery.headers.get("Location")).toBe("/versions/vrelease1/");
     const unknown = await worker.fetch(
       new Request("https://policies.taskly.iy0306.com/terms/?v=v2"),
       env,
     );
     expect(unknown.status).toBe(404);
-    for (const path of ["/terms/?v=", "/terms/?v=v1&v=v2", "/terms/v1/?v=v1", "/?v=v1"]) {
+    for (const path of ["/terms/?v=", "/terms/?v=v1&v=v2", "/terms/v1/?v=v1"]) {
       const invalid = await worker.fetch(
         new Request(`https://policies.taskly.iy0306.com${path}`),
         env,
       );
       expect(invalid.status).toBe(400);
     }
+    const unknownRelease = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/?v=v1"),
+      env,
+    );
+    expect(unknownRelease.status).toBe(404);
   });
 
   it("serves the live catalog, dynamically generated AI index, and diff routes", async () => {

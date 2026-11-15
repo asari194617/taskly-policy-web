@@ -18,7 +18,7 @@ export default {
     const url = new URL(request.url);
     const path = url.pathname;
     const requestedVersions = url.searchParams.getAll("v");
-    if (requestedVersions.length && !/^\/[a-z][a-z0-9-]*\/?$/.test(path)) {
+    if (requestedVersions.length && path !== "/" && !/^\/[a-z][a-z0-9-]*\/?$/.test(path)) {
       return new Response("Invalid version URL", { status: 400, headers: sharedHeaders });
     }
     const requestedKey = objectKey(path);
@@ -29,7 +29,8 @@ export default {
       let key = requestedKey;
       let currentAlias = false;
       if (
-        (/^\/[a-z][a-z0-9-]*(?:$|\/|\.md$)/.test(path) &&
+        (((path === "/" && requestedVersions.length > 0) ||
+          /^\/[a-z][a-z0-9-]*(?:$|\/|\.md$)/.test(path)) &&
           !/^\/(data|viewer|_next)(?:\/|$)/.test(path)) ||
         path === "/llms.txt"
       ) {
@@ -41,22 +42,22 @@ export default {
           if (requestedVersions.length !== 1) {
             return new Response("Invalid version URL", { status: 400, headers: sharedHeaders });
           }
-          const slug = path.split("/").filter(Boolean)[0];
           const version = requestedVersions[0];
           if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(version)) {
             return new Response("Invalid version", { status: 400, headers: sharedHeaders });
           }
-          if (!Object.hasOwn(catalog.documents?.[slug]?.versions ?? {}, version)) {
+          const release = catalog.releases?.find((entry) => entry.version === version);
+          const slug = path.split("/").filter(Boolean)[0];
+          if (!slug) {
+            if (!release) return notFound(request, env);
+            return redirect(`/versions/${version}/`);
+          }
+          const edition =
+            release?.policies.find((entry) => entry.slug === slug)?.revision ?? version;
+          if (!Object.hasOwn(catalog.documents?.[slug]?.versions ?? {}, edition)) {
             return notFound(request, env);
           }
-          return new Response(null, {
-            status: 308,
-            headers: {
-              ...sharedHeaders,
-              Location: `/${slug}/${version}/`,
-              "Cache-Control": "no-store",
-            },
-          });
+          return redirect(`/${slug}/${edition}/`);
         }
         if (path === "/llms.txt") {
           const base = new URL(request.url).origin;
@@ -106,6 +107,13 @@ export default {
     }
   },
 };
+
+function redirect(location) {
+  return new Response(null, {
+    status: 308,
+    headers: { ...sharedHeaders, Location: location, "Cache-Control": "no-store" },
+  });
+}
 
 async function notFound(request, env) {
   const fallback = await env.POLICY_ASSETS.get("404.html");

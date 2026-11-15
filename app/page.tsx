@@ -43,6 +43,11 @@ export default function Home() {
               </li>
             ))}
           </ul>
+          {catalog.releases && (
+            <p className="release-history-link">
+              <Link href="/versions/">版履歴を見る</Link>
+            </p>
+          )}
         </nav>
       )}
     </main>

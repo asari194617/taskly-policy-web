@@ -4,17 +4,17 @@
 
 Next.js の `output: "export"` は共通画面 `/` と `/viewer/` を `out/` に出力します。Cloudflare Worker はポリシーの現行・保存版・履歴・差分 URL を同じ `/viewer/index.html` に解決し、画面は R2 上の `data/catalog.json` と版固定の Markdown を読み込みます。Worker は `/<slug>.md` と `llms.txt` も現行カタログから解決します。新しい版や文書を追加しても、Next.js のビルドや Worker のデプロイは不要です。
 
-`/<slug>/?v=<version>` も受け付け、既存の版固定URL `/<slug>/<version>/` へリダイレクトします。未知の版は404、不正な値や重複した `v` は400です。Taskly の同意記録が参照する版固定URLは維持します。現在のカタログは文書ごとの版を管理するため、全規約をまとめた単一のRelease版を選ぶ `/?v=` は提供しません。
+`/<slug>/?v=<文書の版>` と `/<slug>/?v=<Release tag>` を受け付け、既存の版固定URL `/<slug>/<文書の版>/` へリダイレクトします。`/?v=<Release tag>` はそのReleaseの文書一覧へ移動します。未知の版は404、不正な値や重複した `v` は400です。Taskly の同意記録が参照する版固定URLは維持します。
 
 R2 バケット `taskly-policy-web` は非公開です。Worker の `POLICY_ASSETS` バインディングだけで読み取ります。HTML と Markdown に `X-Robots-Tag: noindex`、HTML に robots メタタグを付けます。Markdown と `llms.txt` は AI リーダー向けに公開します。ログイン、Cookie、アプリケーションサーバーはありません。
 
 ## 本文・版の公開
 
-正本は [taskly-policy](https://github.com/asari194617/taskly-policy) の `main` です。`catalog.json` は文書、現行版、版ごとの原文 SHA-256 を指定します。版固定ファイル `versions/<version>/<slug>.md` は公開後に変更・削除しません。
+正本は [taskly-policy](https://github.com/asari194617/taskly-policy) の GitHub Releases です。各tagが固定するコミットの `manifest.json` は文書順、状態、公開日、施行日、個別文書の改定情報と原文SHA-256を指定します。版固定ファイル `versions/<文書の版>/<slug>.md` は公開後に変更・削除しません。
 
-凍結中の `taskly-front` 設計は GitHub Releases と版ごとの `manifest.json` を想定していました。現在の正本にはReleaseがなく、Tasklyの同意記録は文書ごとの版を保持します。そのため、このサイトは GitHub 上の `catalog.json` を一覧・現行版の正本とし、R2を公開用の検証済み複製として使います。Release単位の予定版管理は、このカタログにはまだありません。
+凍結中の `taskly-front/docs/features/policy.md` のReleaseとmanifestによる版管理を、R2静的配信に合わせて適用します。通常Releaseのうち施行済みで最も新しいものを現行版とし、pre-releaseを改正予定版として保持します。各tagをコミットSHAに解決してからmanifestと本文を取得するため、tagが後で動いても公開済みの保存版はR2上で固定されます。GitHubまたは検証が失敗した場合、直前の正常なR2データが表示されます。Next.jsのRoute HandlerとWebhookキャッシュ破棄は、静的配信のため使用しません。GitHubのReleaseイベントで公開を開始し、定期照合でイベント失敗を補います。
 
-正本リポジトリの `Publish policy changes` は `main` の本文・カタログ変更を起点に、このリポジトリの再利用可能な `Publish policy data` を呼び出します。定期確認を待たずに公開を開始し、後者は手動再実行もできます。`scripts/prepare-data.mjs` が版 ID・ファイルパス・原文ハッシュを検証し、表示用 Markdown のハッシュ `publishedSha256` をカタログに加えます。前回公開したカタログと比較して保存版の変更・削除を拒否します。版固定の Markdown を先に R2 に配置し、正本の `main` が同じコミットを指すことを確認してから `data/catalog.json` を公開します。R2 の Worker バインディングは書き込み直後の値を一貫して読めるため、カタログが指す版のファイルを先に用意します。公開後は現行版の本文ハッシュとカタログを公開 URL から検証します。
+正本リポジトリの `Publish policy changes` はRelease公開イベントを起点に、このリポジトリの再利用可能な `Publish policy data` を呼び出します。定期照合と手動再実行もできます。`scripts/release-source.mjs` がGitHub Releases一覧、各tagの固定コミット、manifest、本文ハッシュと改定フラグを検証して表示用カタログを生成します。`scripts/prepare-data.mjs` は表示用Markdownのハッシュ `publishedSha256` を加えます。前回公開したカタログと比較して保存版の変更・削除を拒否します。版固定のMarkdownを先にR2へ置き、`data/catalog.json`を最後に公開します。公開後は現行版の本文ハッシュとカタログを公開URLから検証します。
 
 `content/` は表示アプリのテスト用固定データです。本番の文書更新には使いません。アプリの `Deploy policies` は Next.js の静的ファイルと Worker だけを公開し、Markdown と `data/catalog.json` を上書きしません。
 
