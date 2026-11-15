@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import type { ReactNode } from "react";
+import { Link } from "../components/dads/Link";
 import { ThemeToggle } from "../components/theme-toggle";
+import "@digital-go-jp/design-tokens/dist/tokens-simple.css";
 import "./styles.css";
 
 export const metadata: Metadata = {
@@ -38,8 +40,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <footer className="site-footer">
           <div className="footer-inner">
             <span>© Taskly</span>
-            <a href="https://taskly.iy0306.com/">Taskly に戻る</a>
-            <a href="https://github.com/asari194617/taskly-policy">原文と版管理</a>
+            <Link href="https://taskly.iy0306.com/">Taskly に戻る</Link>
+            <Link href="https://github.com/asari194617/taskly-policy">原文と版管理</Link>
           </div>
         </footer>
       </body>

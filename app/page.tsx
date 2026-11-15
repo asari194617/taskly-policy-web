@@ -1,3 +1,5 @@
+import { Heading, HeadingTitle } from "../components/dads/Heading";
+import { Link } from "../components/dads/Link";
 import { policyList } from "../lib/policies";
 
 const summaries: Record<string, string> = {
@@ -12,13 +14,15 @@ export default function Home() {
   return (
     <main id="main" className="home-main">
       <div className="eyebrow">POLICIES</div>
-      <h1>Taskly の規約とポリシー</h1>
+      <Heading size="36" className="site-heading">
+        <HeadingTitle level="h1">Taskly の規約とポリシー</HeadingTitle>
+      </Heading>
       <p className="home-intro">現在公開している文書と、版を固定した保存版を確認できます。</p>
       <nav aria-label="ポリシー一覧">
         <ul className="policy-index">
           {policies.map((policy, index) => (
             <li key={policy.slug}>
-              <a href={policy.htmlPath}>
+              <Link href={policy.htmlPath}>
                 <span className="index-number" aria-hidden="true">
                   {String(index + 1).padStart(2, "0")}
                 </span>
@@ -29,13 +33,14 @@ export default function Home() {
                 <span className="index-arrow" aria-hidden="true">
                   →
                 </span>
-              </a>
+              </Link>
             </li>
           ))}
         </ul>
       </nav>
       <p className="source-note">
-        文書の改定履歴は <a href="https://github.com/asari194617/taskly-policy">taskly-policy</a>{" "}
+        文書の改定履歴は{" "}
+        <Link href="https://github.com/asari194617/taskly-policy">taskly-policy</Link>{" "}
         で管理しています。
       </p>
     </main>

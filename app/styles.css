@@ -1,48 +1,53 @@
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind v3 expands this PostCSS directive. */
+@tailwind components;
+/* biome-ignore lint/suspicious/noUnknownAtRules: Tailwind v3 expands this PostCSS directive. */
+@tailwind utilities;
+
 :root {
   color-scheme: light;
-  --bg: #f8f9fb;
-  --surface: #fff;
-  --text: #17233b;
-  --muted: #52627a;
-  --line: #d5dce6;
-  --accent: #154da2;
-  --accent-hover: #0b397d;
-  --accent-subtle: #e7effb;
-  --pill-bg: #e8f3e9;
-  --pill-text: #176139;
-  --focus: #bb6700;
+  --bg: var(--color-neutral-solid-gray-50);
+  --surface: var(--color-neutral-white);
+  --text: var(--color-neutral-solid-gray-900);
+  --muted: var(--color-neutral-solid-gray-700);
+  --line: var(--color-neutral-solid-gray-200);
+  --accent: var(--color-key-1000);
+  --accent-hover: var(--color-key-900);
+  --accent-subtle: var(--color-key-50);
+  --pill-bg: var(--color-primitive-green-50);
+  --pill-text: var(--color-primitive-green-900);
+  --focus: var(--color-neutral-black);
 }
 
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     color-scheme: dark;
-    --bg: #111826;
-    --surface: #182235;
-    --text: #eef3fa;
-    --muted: #b4c2d5;
-    --line: #34445a;
-    --accent: #9cc4ff;
-    --accent-hover: #c8ddff;
-    --accent-subtle: #253c5b;
-    --pill-bg: #183c2d;
-    --pill-text: #a1e6bd;
-    --focus: #ffd176;
+    --bg: var(--color-neutral-solid-gray-900);
+    --surface: var(--color-neutral-solid-gray-800);
+    --text: var(--color-neutral-white);
+    --muted: var(--color-neutral-solid-gray-200);
+    --line: var(--color-neutral-solid-gray-600);
+    --accent: var(--color-primitive-blue-300);
+    --accent-hover: var(--color-primitive-blue-100);
+    --accent-subtle: var(--color-primitive-blue-1100);
+    --pill-bg: var(--color-primitive-green-1100);
+    --pill-text: var(--color-primitive-green-100);
+    --focus: var(--color-primitive-yellow-300);
   }
 }
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --bg: #111826;
-  --surface: #182235;
-  --text: #eef3fa;
-  --muted: #b4c2d5;
-  --line: #34445a;
-  --accent: #9cc4ff;
-  --accent-hover: #c8ddff;
-  --accent-subtle: #253c5b;
-  --pill-bg: #183c2d;
-  --pill-text: #a1e6bd;
-  --focus: #ffd176;
+  --bg: var(--color-neutral-solid-gray-900);
+  --surface: var(--color-neutral-solid-gray-800);
+  --text: var(--color-neutral-white);
+  --muted: var(--color-neutral-solid-gray-200);
+  --line: var(--color-neutral-solid-gray-600);
+  --accent: var(--color-primitive-blue-300);
+  --accent-hover: var(--color-primitive-blue-100);
+  --accent-subtle: var(--color-primitive-blue-1100);
+  --pill-bg: var(--color-primitive-green-1100);
+  --pill-text: var(--color-primitive-green-100);
+  --focus: var(--color-primitive-yellow-300);
 }
 
 * {
@@ -55,7 +60,8 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Noto Sans JP", "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
+  font-family:
+    var(--font-family-sans), "Hiragino Kaku Gothic ProN", "Yu Gothic", Meiryo, sans-serif;
   font-size: 16px;
   line-height: 1.8;
   font-kerning: normal;
@@ -68,6 +74,24 @@ a {
 a:hover {
   color: var(--accent-hover);
   text-decoration-thickness: 2px;
+}
+:root[data-theme="dark"] a:not(.brand),
+:root[data-theme="dark"] a:not(.brand):visited {
+  color: var(--accent);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) a:not(.brand),
+  :root:not([data-theme="light"]) a:not(.brand):visited {
+    color: var(--accent);
+  }
+}
+:root[data-theme="dark"] a:not(.brand):focus-visible {
+  color: var(--color-key-1000);
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) a:not(.brand):focus-visible {
+    color: var(--color-key-1000);
+  }
 }
 a:focus-visible,
 button:focus-visible {
@@ -124,8 +148,8 @@ button {
   width: 32px;
   height: 32px;
   border-radius: 6px;
-  background: #174e9b;
-  color: #fff;
+  background: var(--color-key-900);
+  color: var(--color-neutral-white);
   font-size: 19px;
   line-height: 1;
   font-family: Arial, sans-serif;
@@ -149,9 +173,22 @@ button {
 .theme-toggle:hover {
   background: var(--accent-subtle);
 }
+:root[data-theme="dark"] .theme-toggle:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 3px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .theme-toggle:focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 3px;
+  }
+}
 .theme-toggle span:first-child {
   font-size: 19px;
   line-height: 1;
+}
+.site-heading {
+  color: var(--text);
 }
 .site-footer {
   border-top: 1px solid var(--line);
