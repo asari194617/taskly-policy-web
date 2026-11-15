@@ -1,6 +1,5 @@
+import type { PolicySlug } from "../lib/catalog";
 import { renderPolicyMarkdown } from "../lib/markdown";
-import type { PolicySlug } from "../lib/policies";
-import { policyHistory, policyList } from "../lib/policies";
 import { BreadcrumbItem, BreadcrumbLink, BreadcrumbList, Breadcrumbs } from "./dads/Breadcrumbs";
 import { Button } from "./dads/Button";
 import { Disclosure, DisclosureSummary } from "./dads/Disclosure";
@@ -18,7 +17,21 @@ type Policy = {
   source: string;
 };
 
-export function PolicyView({ policy }: { policy: Policy }) {
+type HistoryEntry = {
+  version: string;
+  current: boolean;
+  previousVersion: string | null;
+};
+
+export function PolicyView({
+  policy,
+  history,
+  otherPolicies,
+}: {
+  policy: Policy;
+  history: HistoryEntry[];
+  otherPolicies: { slug: string; title: string; htmlPath: string }[];
+}) {
   const { html, headings } = renderPolicyMarkdown(policy.source, policy.revisionDate);
   return (
     <main id="main" className="document-main">
@@ -70,7 +83,7 @@ export function PolicyView({ policy }: { policy: Policy }) {
               <HeadingTitle level="h2">改定履歴</HeadingTitle>
             </Heading>
             <ul className="version-list">
-              {policyHistory(policy.slug).map((entry) => (
+              {history.map((entry) => (
                 <li key={entry.version}>
                   <Link href={`/${policy.slug}/${entry.version}/`}>{entry.version}</Link>
                   {entry.current && <span className="edition-pill">現行版</span>}
@@ -94,7 +107,7 @@ export function PolicyView({ policy }: { policy: Policy }) {
             </ol>
             <div className="other-policies">
               <h2>ほかの文書</h2>
-              {policyList()
+              {otherPolicies
                 .filter((item) => item.slug !== policy.slug)
                 .map((item) => (
                   <Link key={item.slug} href={item.htmlPath}>

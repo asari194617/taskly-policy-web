@@ -27,25 +27,11 @@ jobs:
         with:
           ref: ${{ github.event.workflow_run.head_sha }}
           persist-credentials: false
-      - name: Read pinned policy source revision
-        id: source_ref
-        run: |
-          revision="$(cat content/SOURCE_REVISION)"
-          [[ "$revision" =~ ^[0-9a-f]{40}$ ]]
-          echo "revision=$revision" >> "$GITHUB_OUTPUT"
-      - name: Check out pinned policy source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: asari194617/taskly-policy
-          ref: ${{ steps.source_ref.outputs.revision }}
-          path: upstream/taskly-policy
-          persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 26.13.1
           cache: npm
       - run: npm ci
-      - run: node scripts/verify-upstream.mjs upstream/taskly-policy
       - run: npm run build
       - name: Require scoped production credentials
         env:
@@ -78,6 +64,7 @@ jobs:
           aws s3 sync out "$bucket" \
             --endpoint-url "$endpoint" --no-progress \
             --exclude '*.html' --exclude '_next/static/*' \
+            --exclude '*.md' --exclude 'data/*' --exclude 'llms.txt' \
             --cache-control 'public,max-age=300'
           aws s3 sync out "$bucket" \
             --endpoint-url "$endpoint" --no-progress \
@@ -89,55 +76,5 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         working-directory: worker
         run: ../node_modules/.bin/cf deploy --mode production
-      - name: Verify public HTML, Markdown, noindex, and 404
-        run: |
-          node --input-type=module <<'NODE'
-          import { readFileSync } from 'node:fs';
-
-          const base = 'https://policies.taskly.iy0306.com';
-          const catalog = JSON.parse(readFileSync('content/catalog.json', 'utf8'));
-          const routes = [{ path: '/' }, { path: '/llms.txt' }];
-          for (const [slug, document] of Object.entries(catalog.documents)) {
-            routes.push({ path: `/${slug}/` });
-            routes.push({ path: `/${slug}.md`, outputFile: `out/${slug}.md` });
-            for (const version of Object.keys(document.versions)) {
-              routes.push({ path: `/${slug}/${version}/` });
-              routes.push({ path: `/${slug}/${version}.md`, outputFile: `out/${slug}/${version}.md` });
-            }
-          }
-          const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
-          async function read(path, expectedStatus = 200) {
-            let lastError;
-            for (let attempt = 0; attempt < 12; attempt += 1) {
-              try {
-                const response = await fetch(`${base}${path}`, {
-                  redirect: 'follow', signal: AbortSignal.timeout(15_000),
-                });
-                if (response.status !== expectedStatus) throw Error(`HTTP ${response.status}`);
-                if (!response.headers.get('x-robots-tag')?.includes('noindex')) {
-                  throw Error('X-Robots-Tag noindex missing');
-                }
-                return response;
-              } catch (error) {
-                lastError = error;
-                if (attempt < 11) await pause(10_000);
-              }
-            }
-            throw Error(`${path}: ${lastError}`);
-          }
-          for (const route of routes) {
-            const response = await read(route.path);
-            if (route.outputFile) {
-              if (!response.headers.get('content-type')?.includes('text/markdown')) {
-                throw Error(`${route.path}: Markdown content type missing`);
-              }
-              const body = Buffer.from(await response.arrayBuffer());
-              if (!body.equals(readFileSync(route.outputFile))) {
-                throw Error(`${route.path}: published Markdown mismatch`);
-              }
-            }
-            console.log(`Verified ${route.path}`);
-          }
-          await read('/does-not-exist/', 404);
-          console.log(`Verified ${routes.length} public routes, published Markdown, and 404`);
-          NODE
+      - name: Verify public routes against independently published data
+        run: node scripts/probe-live.mjs

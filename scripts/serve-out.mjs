@@ -1,23 +1,30 @@
 import { readFile } from "node:fs/promises";
 import { createServer } from "node:http";
 import { join } from "node:path";
-import { contentType, objectKey } from "../worker/routing.mjs";
+import worker from "../worker/index.mjs";
 
 const port = Number(process.env.PORT || 4173);
+const bucket = {
+  async get(key) {
+    try {
+      const body = await readFile(join("out", key));
+      return {
+        body,
+        httpEtag: '"local"',
+        json: async () => JSON.parse(body.toString("utf8")),
+        writeHttpMetadata() {},
+      };
+    } catch (error) {
+      if (error.code === "ENOENT") return null;
+      throw error;
+    }
+  },
+};
 createServer(async (request, response) => {
-  const pathname = new URL(request.url || "/", "http://localhost").pathname;
-  const key = objectKey(pathname);
-  if (!key) {
-    response.writeHead(400);
-    response.end();
-    return;
-  }
-  try {
-    const data = await readFile(join("out", key));
-    response.writeHead(200, { "Content-Type": contentType(key), "X-Robots-Tag": "noindex" });
-    response.end(data);
-  } catch {
-    response.writeHead(404, { "Content-Type": "text/html; charset=utf-8" });
-    response.end(await readFile("out/404.html"));
-  }
+  const result = await worker.fetch(
+    new Request(`http://127.0.0.1:${port}${request.url || "/"}`, { method: request.method }),
+    { POLICY_ASSETS: bucket },
+  );
+  response.writeHead(result.status, Object.fromEntries(result.headers));
+  response.end(result.body ? Buffer.from(await result.arrayBuffer()) : undefined);
 }).listen(port, "127.0.0.1", () => console.log(`Serving out on http://127.0.0.1:${port}`));

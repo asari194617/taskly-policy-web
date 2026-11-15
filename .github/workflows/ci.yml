@@ -21,12 +21,6 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - name: Read pinned policy source revision
-        id: source_ref
-        run: |
-          revision="$(cat content/SOURCE_REVISION)"
-          [[ "$revision" =~ ^[0-9a-f]{40}$ ]]
-          echo "revision=$revision" >> "$GITHUB_OUTPUT"
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 26.13.1
@@ -42,14 +36,6 @@ jobs:
       - run: npm ci
       - run: npm run lint
       - run: npm run typecheck
-      - name: Check out pinned policy source
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-        with:
-          repository: asari194617/taskly-policy
-          ref: ${{ steps.source_ref.outputs.revision }}
-          path: upstream/taskly-policy
-          persist-credentials: false
-      - run: node scripts/verify-upstream.mjs upstream/taskly-policy
       - run: npm run test:coverage
       - run: npm run build
       - run: npx playwright install --with-deps chromium

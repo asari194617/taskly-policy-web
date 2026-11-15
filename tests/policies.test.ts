@@ -27,8 +27,10 @@ describe("policy catalog", () => {
 
   it("rejects invalid slugs and versions", () => {
     expect(isPolicySlug("terms")).toBe(true);
-    expect(isPolicySlug("not-a-policy")).toBe(false);
+    expect(isPolicySlug("new-policy")).toBe(true);
+    expect(isPolicySlug("../secret")).toBe(false);
     expect(getPolicy("terms", "unknown")).toBeNull();
+    expect(getPolicy("not-a-policy")).toBeNull();
   });
 
   it("does not invent an effective date for the continuity snapshot", () => {
