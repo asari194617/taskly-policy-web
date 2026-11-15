@@ -108,8 +108,8 @@ button {
 .brand {
   display: inline-flex;
   align-items: center;
-  gap: 12px;
-  font-size: 18px;
+  gap: 8px;
+  font-size: 16px;
   font-weight: 750;
   letter-spacing: -0.02em;
   color: var(--text);
@@ -120,8 +120,9 @@ button {
 }
 .brand-logo {
   display: block;
-  width: 112px;
-  height: auto;
+  width: auto;
+  height: 1.5rem;
+  flex: none;
 }
 .brand-secondary {
   font-weight: 600;
@@ -562,10 +563,10 @@ button {
     min-height: 66px;
   }
   .brand {
-    font-size: 16px;
+    font-size: 13px;
   }
   .brand-logo {
-    width: 92px;
+    height: 1.25rem;
   }
   .home-main {
     padding-top: 50px;
