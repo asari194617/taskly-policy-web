@@ -209,6 +209,20 @@ export default function Viewer() {
   const [error, setError] = useState(false);
   useEffect(() => setRoute(parseRoute(window.location.pathname)), []);
   useEffect(() => {
+    if (!catalog || !route) return;
+    const title = catalog.documents[route.slug]?.title;
+    if (!title) return;
+    const pageTitle =
+      route.kind === "history"
+        ? `${title}の改定履歴`
+        : route.kind === "diff"
+          ? `${title} ${route.version}の変更`
+          : route.kind === "version"
+            ? `${title} (${route.version})`
+            : title;
+    document.title = `${pageTitle} | Taskly ポリシー`;
+  }, [catalog, route]);
+  useEffect(() => {
     if (!catalog || !route || route.kind === "history") return;
     const controller = new AbortController();
     const version = route.version ?? catalog.current[route.slug];
