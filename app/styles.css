@@ -152,7 +152,7 @@ button {
 }
 .home-main {
   width: min(100% - 40px, 800px);
-  min-height: calc(100vh - 159px);
+  min-height: calc(100vh - 145px);
   margin: 0 auto;
   padding: 72px 0 100px;
 }
@@ -177,6 +177,10 @@ button {
 }
 .policy-index li {
   border-bottom: 1px solid var(--line);
+}
+.release-history-link {
+  margin: 24px 0 0;
+  font-size: 14px;
 }
 .policy-index a {
   display: flex;
@@ -406,7 +410,7 @@ button {
 .history-main,
 .diff-main {
   width: min(100% - 40px, 900px);
-  min-height: calc(100vh - 159px);
+  min-height: calc(100vh - 145px);
   margin-inline: auto;
   padding: 26px 0 100px;
 }
@@ -434,6 +438,15 @@ button {
 }
 .history-entry time,
 .diff-summary {
+  color: var(--muted);
+  font-size: 14px;
+}
+.release-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+  margin: 0 0 30px;
   color: var(--muted);
   font-size: 14px;
 }

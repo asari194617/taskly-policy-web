@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import { type Catalog, policyHistory } from "../lib/catalog";
 import { allPolicyVersions, getPolicy, isPolicySlug, policyList } from "../lib/policies";
 
 describe("policy catalog", () => {
@@ -35,5 +36,39 @@ describe("policy catalog", () => {
 
   it("does not invent an effective date for the continuity snapshot", () => {
     expect(getPolicy("continuity")?.effectiveDate).toBeNull();
+  });
+
+  it("compares an upcoming revision against the current edition", () => {
+    const catalog: Catalog = {
+      schemaVersion: 1,
+      current: { terms: "2" },
+      documents: {
+        terms: {
+          title: "利用規約",
+          versions: {
+            "1": { file: "versions/1/terms.md", sha256: "a" },
+            "2": { file: "versions/2/terms.md", sha256: "b" },
+            "3": { file: "versions/3/terms.md", sha256: "c" },
+          },
+        },
+      },
+      upcoming: [
+        {
+          version: "v3",
+          status: "upcoming",
+          publishedAt: "2026-11-15T00:00:00Z",
+          effectiveAt: "2027-01-01T00:00:00Z",
+          sourceSha: "a".repeat(40),
+          policies: [{ slug: "terms", revision: "3", changed: true }],
+        },
+      ],
+    };
+    expect(
+      policyHistory(catalog, "terms").map((entry) => [entry.version, entry.previousVersion]),
+    ).toEqual([
+      ["3", "2"],
+      ["2", "1"],
+      ["1", null],
+    ]);
   });
 });

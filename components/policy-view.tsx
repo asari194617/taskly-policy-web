@@ -11,6 +11,7 @@ type Policy = {
   title: string;
   version: string;
   current: boolean;
+  upcoming?: boolean;
   effectiveDate?: string | null;
   revisionDate?: string;
   markdownPath: string;
@@ -20,6 +21,7 @@ type Policy = {
 type HistoryEntry = {
   version: string;
   current: boolean;
+  upcoming?: boolean;
   previousVersion: string | null;
 };
 
@@ -46,7 +48,9 @@ export function PolicyView({
       <div className="document-shell">
         <article className="document">
           <div className="edition-line">
-            <span className="edition-pill">{policy.current ? "現行版" : "保存版"}</span>
+            <span className="edition-pill">
+              {policy.upcoming ? "改正予定版" : policy.current ? "現行版" : "保存版"}
+            </span>
             <span>版 {policy.version}</span>
             {policy.effectiveDate && <span>施行日 {policy.effectiveDate}</span>}
             {policy.revisionDate && <span>改訂日 {policy.revisionDate}</span>}
@@ -87,6 +91,7 @@ export function PolicyView({
                 <li key={entry.version}>
                   <Link href={`/${policy.slug}/${entry.version}/`}>{entry.version}</Link>
                   {entry.current && <span className="edition-pill">現行版</span>}
+                  {entry.upcoming && <span className="edition-pill">改正予定版</span>}
                   {entry.previousVersion && (
                     <Link href={`/${policy.slug}/history/${entry.version}/`}>前の版との差分</Link>
                   )}

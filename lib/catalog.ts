@@ -8,10 +8,21 @@ export type Edition = {
   publishedSha256?: string;
 };
 
+export type PolicyRelease = {
+  version: string;
+  status: "current" | "upcoming";
+  publishedAt: string;
+  effectiveAt: string;
+  sourceSha: string;
+  policies: { slug: string; revision: string; changed: boolean }[];
+};
+
 export type Catalog = {
   schemaVersion: number;
   current: Record<string, string>;
   documents: Record<string, { title: string; versions: Record<string, Edition> }>;
+  releases?: PolicyRelease[];
+  upcoming?: PolicyRelease[];
 };
 
 export function isPolicySlug(value: string): value is PolicySlug {
@@ -38,17 +49,33 @@ export function policyList(catalog: Catalog) {
 export function policyHistory(catalog: Catalog, slug: PolicySlug) {
   const editions = catalog.documents[slug].versions;
   const current = catalog.current[slug];
-  const versions = Object.keys(editions).sort((left, right) => {
-    if (left === current) return -1;
-    if (right === current) return 1;
+  const upcoming = new Set(
+    catalog.upcoming?.flatMap((release) =>
+      release.policies
+        .filter((policy) => policy.slug === slug && policy.revision !== current)
+        .map((policy) => policy.revision),
+    ) ?? [],
+  );
+  const byDate = (left: string, right: string) => {
     const leftDate = editions[left].revisionDate ?? editions[left].effectiveDate ?? "";
     const rightDate = editions[right].revisionDate ?? editions[right].effectiveDate ?? "";
     return rightDate.localeCompare(leftDate);
-  });
-  return versions.map((version, index) => ({
+  };
+  const upcomingVersions = [...upcoming].sort(byDate);
+  const publishedVersions = Object.keys(editions)
+    .filter((version) => !upcoming.has(version))
+    .sort((left, right) => {
+      if (left === current) return -1;
+      if (right === current) return 1;
+      return byDate(left, right);
+    });
+  return [...upcomingVersions, ...publishedVersions].map((version) => ({
     version,
     current: version === current,
-    previousVersion: versions[index + 1] ?? null,
+    upcoming: upcoming.has(version),
+    previousVersion: upcoming.has(version)
+      ? current
+      : (publishedVersions[publishedVersions.indexOf(version) + 1] ?? null),
     date: editions[version].revisionDate ?? editions[version].effectiveDate ?? null,
   }));
 }

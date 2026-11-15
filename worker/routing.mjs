@@ -13,6 +13,13 @@ const versionPattern = /^[A-Za-z0-9][A-Za-z0-9._-]*$/;
 
 export function policyRoute(pathname, catalog) {
   const parts = pathname.split("/").filter(Boolean);
+  if (parts[0] === "versions") {
+    if (parts.length === 1) return { key: "versions/index.html" };
+    if (parts.length === 2 && catalog.releases?.some((release) => release.version === parts[1])) {
+      return { key: "versions/index.html" };
+    }
+    return { missing: true };
+  }
   if (parts.length === 1 && parts[0].endsWith(".md")) {
     const slug = parts[0].slice(0, -3);
     if (slugPattern.test(slug) && pathname === `/${slug}.md`) {
@@ -53,16 +60,25 @@ export function policyRoute(pathname, catalog) {
   if (parts.length === 3 && parts[1] === "history") {
     const version = parts[2];
     const editions = document.versions ?? {};
-    const versions = Object.keys(editions).sort((left, right) => {
-      if (left === catalog.current[slug]) return -1;
-      if (right === catalog.current[slug]) return 1;
-      const leftDate = editions[left].revisionDate ?? editions[left].effectiveDate ?? "";
-      const rightDate = editions[right].revisionDate ?? editions[right].effectiveDate ?? "";
-      return rightDate.localeCompare(leftDate);
-    });
+    const upcoming = new Set(
+      catalog.upcoming?.flatMap((release) =>
+        release.policies
+          .filter((policy) => policy.slug === slug && policy.revision !== catalog.current[slug])
+          .map((policy) => policy.revision),
+      ) ?? [],
+    );
+    const versions = Object.keys(editions)
+      .filter((edition) => !upcoming.has(edition))
+      .sort((left, right) => {
+        if (left === catalog.current[slug]) return -1;
+        if (right === catalog.current[slug]) return 1;
+        const leftDate = editions[left].revisionDate ?? editions[left].effectiveDate ?? "";
+        const rightDate = editions[right].revisionDate ?? editions[right].effectiveDate ?? "";
+        return rightDate.localeCompare(leftDate);
+      });
     return versionPattern.test(version) &&
-      versions.indexOf(version) >= 0 &&
-      versions.indexOf(version) < versions.length - 1
+      ((upcoming.has(version) && Object.hasOwn(editions, version)) ||
+        (versions.indexOf(version) >= 0 && versions.indexOf(version) < versions.length - 1))
       ? { key: "viewer/index.html" }
       : { missing: true };
   }
