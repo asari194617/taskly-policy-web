@@ -1,6 +1,10 @@
 import { renderPolicyMarkdown } from "../lib/markdown";
 import type { PolicySlug } from "../lib/policies";
 import { policyList } from "../lib/policies";
+import { BreadcrumbItem, BreadcrumbLink, BreadcrumbList, Breadcrumbs } from "./dads/Breadcrumbs";
+import { Disclosure, DisclosureSummary } from "./dads/Disclosure";
+import { Heading, HeadingTitle } from "./dads/Heading";
+import { Link } from "./dads/Link";
 
 type Policy = {
   slug: PolicySlug;
@@ -18,11 +22,14 @@ export function PolicyView({ policy }: { policy: Policy }) {
   const { html, headings } = renderPolicyMarkdown(policy.source, policy.revisionDate);
   return (
     <main id="main" className="document-main">
-      <nav className="breadcrumbs" aria-label="パンくずリスト">
-        <a href="/">ポリシー一覧</a>
-        <span aria-hidden="true">/</span>
-        <span>{policy.title}</span>
-      </nav>
+      <Breadcrumbs className="breadcrumbs" aria-label="パンくずリスト">
+        <BreadcrumbList>
+          <BreadcrumbItem>
+            <BreadcrumbLink href="/">ポリシー一覧</BreadcrumbLink>
+          </BreadcrumbItem>
+          <BreadcrumbItem isCurrent>{policy.title}</BreadcrumbItem>
+        </BreadcrumbList>
+      </Breadcrumbs>
       <div className="document-shell">
         <article className="document">
           <div className="eyebrow">TASKLY POLICY</div>
@@ -32,32 +39,34 @@ export function PolicyView({ policy }: { policy: Policy }) {
             {policy.effectiveDate && <span>施行日 {policy.effectiveDate}</span>}
             {policy.revisionDate && <span>改訂日 {policy.revisionDate}</span>}
           </div>
-          <details className="mobile-toc">
-            <summary>目次を開く</summary>
+          <Disclosure className="mobile-toc">
+            <DisclosureSummary>目次を開く</DisclosureSummary>
             <ol>
               {headings.map((heading) => (
                 <li key={heading.id} className={heading.level > 2 ? "toc-nested" : undefined}>
-                  <a href={`#${heading.id}`}>{heading.text}</a>
+                  <Link href={`#${heading.id}`}>{heading.text}</Link>
                 </li>
               ))}
             </ol>
-          </details>
+          </Disclosure>
           {/* The committed Markdown is hash verified and markdown-it disables embedded HTML. */}
           {/* biome-ignore lint/security/noDangerouslySetInnerHtml: The renderer escapes source HTML. */}
           <div className="policy-content" dangerouslySetInnerHTML={{ __html: html }} />
           <section className="document-tools" aria-label="版と形式">
-            <h2>この文書の版</h2>
+            <Heading size="18" className="site-heading">
+              <HeadingTitle level="h2">この文書の版</HeadingTitle>
+            </Heading>
             <p>現行版へのリンクと保存版の URL を使い分けられます。</p>
             <div className="document-links">
-              <a href={`/${policy.slug}/`}>現行版</a>
-              <a href={`/${policy.slug}/${policy.version}/`}>この版の固定 URL</a>
-              <a href={policy.markdownPath}>Markdown で読む</a>
+              <Link href={`/${policy.slug}/`}>現行版</Link>
+              <Link href={`/${policy.slug}/${policy.version}/`}>この版の固定 URL</Link>
+              <Link href={policy.markdownPath}>Markdown で読む</Link>
             </div>
             {policy.versions.length > 1 && (
               <ul className="version-list">
                 {policy.versions.map((version) => (
                   <li key={version}>
-                    <a href={`/${policy.slug}/${version}/`}>{version}</a>
+                    <Link href={`/${policy.slug}/${version}/`}>{version}</Link>
                   </li>
                 ))}
               </ul>
@@ -70,7 +79,7 @@ export function PolicyView({ policy }: { policy: Policy }) {
             <ol>
               {headings.map((heading) => (
                 <li key={heading.id} className={heading.level > 2 ? "toc-nested" : undefined}>
-                  <a href={`#${heading.id}`}>{heading.text}</a>
+                  <Link href={`#${heading.id}`}>{heading.text}</Link>
                 </li>
               ))}
             </ol>
@@ -79,9 +88,9 @@ export function PolicyView({ policy }: { policy: Policy }) {
               {policyList()
                 .filter((item) => item.slug !== policy.slug)
                 .map((item) => (
-                  <a key={item.slug} href={item.htmlPath}>
+                  <Link key={item.slug} href={item.htmlPath}>
                     {item.title}
-                  </a>
+                  </Link>
                 ))}
             </div>
           </div>

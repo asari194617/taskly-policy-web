@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { Button } from "./dads/Button";
 
 type Theme = "light" | "dark";
 
@@ -27,15 +28,17 @@ export function ThemeToggle() {
   }
 
   return (
-    <button
+    <Button
       className="theme-toggle"
       type="button"
+      size="sm"
+      variant="outline"
       onClick={toggle}
       aria-label="ダークテーマを使用"
       aria-pressed={theme === "dark"}
     >
       <span aria-hidden="true">◐</span>
       <span>表示切替</span>
-    </button>
+    </Button>
   );
 }

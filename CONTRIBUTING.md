@@ -9,4 +9,4 @@
 
 画面と運用設定の変更は別 PR を推奨します。既存 issue を検索してから新しい issue を起票してください。CI の `required-ci` 成功に加え、公開 URL の HTML、Markdown、noindex ヘッダー、404 を実際に確認します。
 
-デザインは[デジタル庁デザインシステム](https://design.digital.go.jp/dads/)の日本語の可読性とアクセシビリティ指針を参考にした独自実装です。文書の見出し階層、下線付きリンク、キーボード操作、明暗テーマ、モバイル表示を維持してください。
+デザインには[デジタル庁デザインシステム](https://design.digital.go.jp/dads/)の公式デザイントークン、Tailwindテーマプラグイン、Reactコードスニペットを使用します。採用範囲と更新方法は[docs/design-system.md](docs/design-system.md)を参照してください。文書の見出し階層、下線付きリンク、キーボード操作、明暗テーマ、モバイル表示を維持してください。
