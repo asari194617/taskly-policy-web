@@ -137,9 +137,7 @@ export function compileReleaseSnapshots(snapshots, readFile, now = new Date()) {
     newest[0].policies.map(({ slug, revision }) => [slug, revision]),
   );
   const upcoming = releases
-    .filter(
-      (release) => release.status === "upcoming" && Date.parse(release.effectiveAt) > timestamp,
-    )
+    .filter((release) => release.status === "upcoming")
     .sort((left, right) => Date.parse(left.effectiveAt) - Date.parse(right.effectiveAt));
   return {
     catalog: { schemaVersion: 1, current, documents, releases, upcoming },

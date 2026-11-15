@@ -37,7 +37,7 @@ describe("GitHub Release policy manifests", () => {
     const snapshots = [
       release("v1", "current", "2026-01-01T00:00:00Z", [terms("1", true)]),
       release("v2", "current", "2026-02-01T00:00:00Z", [terms("2", true)]),
-      release("v3", "upcoming", "2027-01-01T00:00:00Z", [terms("2", false)]),
+      release("v3", "upcoming", "2026-03-01T00:00:00Z", [terms("2", false)]),
     ];
     const { catalog, files } = compileReleaseSnapshots(
       snapshots,
