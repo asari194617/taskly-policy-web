@@ -79,7 +79,7 @@ jobs:
           for (const [slug, version] of Object.entries(actual.current)) {
             const markdown = await fetch(`${base}/${slug}/${version}.md`);
             if (!markdown.ok) throw Error(`${slug}: HTTP ${markdown.status}`);
-            const hash = createHash('sha256').update(await markdown.arrayBuffer()).digest('hex');
+            const hash = createHash('sha256').update(Buffer.from(await markdown.arrayBuffer())).digest('hex');
             if (hash !== actual.documents[slug].versions[version].publishedSha256) {
               throw Error(`${slug}: published Markdown mismatch`);
             }
