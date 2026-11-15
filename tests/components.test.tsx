@@ -1,8 +1,8 @@
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
 import { PolicyView } from "../components/policy-view";
-import { ThemeToggle } from "../components/theme-toggle";
 import { getPolicy } from "../lib/policies";
+import { getPolicyDiff } from "../lib/policy-diff";
 
 describe("policy presentation", () => {
   it("renders the current privacy edition, TOC, Markdown and archived links", () => {
@@ -31,9 +31,10 @@ describe("policy presentation", () => {
     expect(html).not.toContain("施行日");
   });
 
-  it("exposes a labelled theme control", () => {
-    const html = renderToStaticMarkup(<ThemeToggle />);
-    expect(html).toContain('aria-label="ダークテーマを使用"');
-    expect(html).toContain("<button");
+  it("compares the privacy revision with the previous edition", () => {
+    const diff = getPolicyDiff("privacy", "2026-09-23.1");
+    expect(diff?.before.version).toBe("2026-09-22.1");
+    expect(diff?.hunks.some((hunk) => hunk.lines.some((line) => line.kind === "added"))).toBe(true);
+    expect(getPolicyDiff("terms", "2026-09-22.1")).toBeNull();
   });
 });

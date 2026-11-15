@@ -26,6 +26,7 @@ export function presentationMarkdown(source: string, revisionDate?: string) {
       )
         return false;
       if (seenTitle && !seenSection && line === duplicatedDate) return false;
+      if (line.trim() === "<empty-block/>") return false;
       return true;
     })
     .join("\n");

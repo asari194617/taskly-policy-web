@@ -45,6 +45,24 @@ export function allPolicyVersions() {
   );
 }
 
+export function policyHistory(slug: PolicySlug) {
+  const editions = catalog.documents[slug].versions;
+  const current = catalog.current[slug];
+  const versions = Object.keys(editions).sort((left, right) => {
+    if (left === current) return -1;
+    if (right === current) return 1;
+    const leftDate = editions[left].revisionDate ?? editions[left].effectiveDate ?? "";
+    const rightDate = editions[right].revisionDate ?? editions[right].effectiveDate ?? "";
+    return rightDate.localeCompare(leftDate);
+  });
+  return versions.map((version, index) => ({
+    version,
+    current: version === current,
+    previousVersion: versions[index + 1] ?? null,
+    date: editions[version].revisionDate ?? editions[version].effectiveDate ?? null,
+  }));
+}
+
 export function getPolicy(slug: PolicySlug, version = catalog.current[slug]) {
   const document = catalog.documents[slug];
   const edition = document.versions[version];
@@ -61,6 +79,5 @@ export function getPolicy(slug: PolicySlug, version = catalog.current[slug]) {
     revisionDate: edition.revisionDate,
     markdownPath: `/${slug}/${version}.md`,
     source,
-    versions: Object.keys(document.versions),
   };
 }

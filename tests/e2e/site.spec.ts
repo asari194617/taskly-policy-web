@@ -59,16 +59,43 @@ for (const slug of slugs) {
   }
 }
 
-test("theme choice persists and has an accessible pressed state", async ({ page }) => {
+test("theme follows the operating system", async ({ page }) => {
+  await page.emulateMedia({ colorScheme: "dark" });
   await page.goto("/");
-  const toggle = page.getByRole("button", { name: "ダークテーマを使用" });
-  await expect(toggle).toBeVisible();
-  const original = await toggle.getAttribute("aria-pressed");
-  await toggle.click();
-  await expect(toggle).toHaveAttribute("aria-pressed", original === "true" ? "false" : "true");
-  const selected = await page.locator("html").getAttribute("data-theme");
-  await page.reload();
-  await expect(page.locator("html")).toHaveAttribute("data-theme", selected ?? "");
+  await expect(page.getByRole("button", { name: /テーマ/ })).toHaveCount(0);
+  const dark = await page
+    .locator("html")
+    .evaluate((element) => getComputedStyle(element).colorScheme);
+  expect(dark).toBe("dark");
+  await page.emulateMedia({ colorScheme: "light" });
+  const light = await page
+    .locator("html")
+    .evaluate((element) => getComputedStyle(element).colorScheme);
+  expect(light).toBe("light");
+  await expect(page.locator("img.brand-logo")).toBeVisible();
+});
+
+test("history opens a diff against the previous version", async ({ page }) => {
+  await page.goto("/privacy/");
+  await page
+    .getByRole("navigation", { name: "文書のリンク" })
+    .getByRole("link", { name: "改定履歴" })
+    .click();
+  await expect(page.getByRole("heading", { name: "プライバシーポリシーの改定履歴" })).toBeVisible();
+  await page.getByRole("link", { name: "前の版との差分を見る" }).click();
+  await expect(page.getByRole("heading", { name: "版 2026-09-23.1 の変更" })).toBeVisible();
+  await expect(
+    page.getByRole("region", { name: "Markdown の変更差分" }).locator(".diff-added").first(),
+  ).toBeVisible();
+  const diffOverflows = await page
+    .getByRole("region", { name: "Markdown の変更差分" })
+    .evaluate((element) => element.scrollWidth > element.clientWidth);
+  expect(diffOverflows).toBe(false);
+});
+
+test("source artifact is hidden from the security page", async ({ page }) => {
+  await page.goto("/security/");
+  await expect(page.getByText("<empty-block/>")).toHaveCount(0);
 });
 
 test("unknown route is a real 404", async ({ page }) => {
@@ -90,8 +117,10 @@ test("capture review screenshots", async ({ page, isMobile }) => {
   const prefix = isMobile ? "mobile-dark" : "desktop-light";
   await page.goto("/");
   await page.screenshot({ path: `docs/screenshots/${prefix}-home.png`, fullPage: true });
-  await page.getByRole("button", { name: "ダークテーマを使用" }).focus();
+  await page.getByRole("link", { name: "利用規約" }).focus();
   await page.screenshot({ path: `docs/screenshots/${prefix}-focus.png`, fullPage: false });
   await page.goto("/privacy/");
   await page.screenshot({ path: `docs/screenshots/${prefix}-privacy.png`, fullPage: true });
+  await page.goto("/privacy/history/2026-09-23.1/");
+  await page.screenshot({ path: `docs/screenshots/${prefix}-diff.png`, fullPage: false });
 });
