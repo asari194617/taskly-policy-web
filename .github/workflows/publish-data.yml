@@ -1,8 +1,19 @@
 name: Publish policy data
 
 on:
-  schedule:
-    - cron: "*/15 * * * *"
+  workflow_call:
+    inputs:
+      source_ref:
+        description: Exact commit from the policy source repository
+        type: string
+        required: true
+    secrets:
+      CLOUDFLARE_ACCOUNT_ID:
+        required: true
+      R2_ACCESS_KEY_ID:
+        required: true
+      R2_SECRET_ACCESS_KEY:
+        required: true
   workflow_dispatch:
 
 permissions:
@@ -18,20 +29,25 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out publisher code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
+          repository: asari194617/taskly-policy-web
+          ref: main
+          path: publisher
           persist-credentials: false
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Check out policy source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           repository: asari194617/taskly-policy
-          ref: main
+          ref: ${{ inputs.source_ref || 'main' }}
           path: upstream/taskly-policy
           persist-credentials: false
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 26.13.1
       - name: Verify source hashes and prepare data
-        run: node scripts/prepare-data.mjs upstream/taskly-policy published
+        run: node publisher/scripts/prepare-data.mjs upstream/taskly-policy published
       - name: Publish immutable editions, then catalog
         env:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
@@ -53,7 +69,7 @@ jobs:
               --endpoint-url "$endpoint" >/dev/null 2>head-error.txt; then
             aws s3 cp "$bucket/data/catalog.json" previous-catalog.json \
               --endpoint-url "$endpoint" --no-progress
-            node scripts/check-data-update.mjs previous-catalog.json published/data/catalog.json
+            node publisher/scripts/check-data-update.mjs previous-catalog.json published/data/catalog.json
           elif ! grep -Eq '404|Not Found|NoSuchKey' head-error.txt; then
             cat head-error.txt >&2
             exit 1
@@ -62,6 +78,12 @@ jobs:
             --endpoint-url "$endpoint" --no-progress --exclude 'data/*' \
             --cache-control 'public,max-age=31536000,immutable' \
             --content-type 'text/markdown; charset=utf-8'
+          source_ref="$(git -C upstream/taskly-policy rev-parse HEAD)"
+          latest_ref="$(git ls-remote https://github.com/asari194617/taskly-policy.git refs/heads/main | cut -f1)"
+          if [ -z "$latest_ref" ] || [ "$source_ref" != "$latest_ref" ]; then
+            echo 'A newer policy source commit exists; refusing to publish an older catalog.' >&2
+            exit 1
+          fi
           aws s3 cp published/data/catalog.json "$bucket/data/catalog.json" \
             --endpoint-url "$endpoint" --no-progress \
             --cache-control 'no-store' --content-type 'application/json; charset=utf-8'

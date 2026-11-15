@@ -101,6 +101,12 @@ test("source artifact is hidden from the security page", async ({ page }) => {
   await expect(page.getByText("<empty-block/>")).toHaveCount(0);
 });
 
+test("version query redirects to the immutable document URL", async ({ page }) => {
+  await page.goto("/terms/?v=2026-09-22.1");
+  await expect(page).toHaveURL(/\/terms\/2026-09-22\.1\/$/);
+  await expect(page.getByRole("heading", { name: "利用規約", level: 1 })).toBeVisible();
+});
+
 test("unknown route is a real 404", async ({ page }) => {
   const response = await page.goto("/does-not-exist/");
   expect(response?.status()).toBe(404);
@@ -126,6 +132,9 @@ test("capture review screenshots", async ({ page, isMobile }) => {
   await page.goto("/privacy/");
   await expect(page.getByRole("heading", { name: "プライバシーポリシー", level: 1 })).toBeVisible();
   await page.screenshot({ path: `docs/screenshots/${prefix}-runtime-title.png`, fullPage: false });
+  await page.goto("/terms/?v=2026-09-22.1");
+  await expect(page.getByRole("heading", { name: "利用規約", level: 1 })).toBeVisible();
+  await page.screenshot({ path: `docs/screenshots/${prefix}-version-query.png`, fullPage: false });
   await page.screenshot({ path: `docs/screenshots/${prefix}-privacy.png`, fullPage: true });
   await page.screenshot({ path: `docs/screenshots/${prefix}-runtime-privacy.png`, fullPage: true });
   await page.goto("/privacy/history/2026-09-23.1/");

@@ -4,13 +4,17 @@
 
 Next.js の `output: "export"` は共通画面 `/` と `/viewer/` を `out/` に出力します。Cloudflare Worker はポリシーの現行・保存版・履歴・差分 URL を同じ `/viewer/index.html` に解決し、画面は R2 上の `data/catalog.json` と版固定の Markdown を読み込みます。Worker は `/<slug>.md` と `llms.txt` も現行カタログから解決します。新しい版や文書を追加しても、Next.js のビルドや Worker のデプロイは不要です。
 
+`/<slug>/?v=<version>` も受け付け、既存の版固定URL `/<slug>/<version>/` へリダイレクトします。未知の版は404、不正な値や重複した `v` は400です。Taskly の同意記録が参照する版固定URLは維持します。現在のカタログは文書ごとの版を管理するため、全規約をまとめた単一のRelease版を選ぶ `/?v=` は提供しません。
+
 R2 バケット `taskly-policy-web` は非公開です。Worker の `POLICY_ASSETS` バインディングだけで読み取ります。HTML と Markdown に `X-Robots-Tag: noindex`、HTML に robots メタタグを付けます。Markdown と `llms.txt` は AI リーダー向けに公開します。ログイン、Cookie、アプリケーションサーバーはありません。
 
 ## 本文・版の公開
 
 正本は [taskly-policy](https://github.com/asari194617/taskly-policy) の `main` です。`catalog.json` は文書、現行版、版ごとの原文 SHA-256 を指定します。版固定ファイル `versions/<version>/<slug>.md` は公開後に変更・削除しません。
 
-このリポジトリの `Publish policy data` ワークフローは 15 分ごと、および手動実行時に正本をチェックアウトします。`scripts/prepare-data.mjs` が版 ID・ファイルパス・原文ハッシュを検証し、表示用 Markdown のハッシュ `publishedSha256` をカタログに加えます。前回公開したカタログと比較して保存版の変更・削除を拒否します。版固定の Markdown を先に R2 に配置し、最後に `data/catalog.json` を公開します。R2 の Worker バインディングは書き込み直後の値を一貫して読めるため、カタログが指す版のファイルを先に用意します。公開後は現行版の本文ハッシュとカタログを公開 URL から検証します。
+凍結中の `taskly-front` 設計は GitHub Releases と版ごとの `manifest.json` を想定していました。現在の正本にはReleaseがなく、Tasklyの同意記録は文書ごとの版を保持します。そのため、このサイトは GitHub 上の `catalog.json` を一覧・現行版の正本とし、R2を公開用の検証済み複製として使います。Release単位の予定版管理は、このカタログにはまだありません。
+
+正本リポジトリの `Publish policy changes` は `main` の本文・カタログ変更を起点に、このリポジトリの再利用可能な `Publish policy data` を呼び出します。定期確認を待たずに公開を開始し、後者は手動再実行もできます。`scripts/prepare-data.mjs` が版 ID・ファイルパス・原文ハッシュを検証し、表示用 Markdown のハッシュ `publishedSha256` をカタログに加えます。前回公開したカタログと比較して保存版の変更・削除を拒否します。版固定の Markdown を先に R2 に配置し、正本の `main` が同じコミットを指すことを確認してから `data/catalog.json` を公開します。R2 の Worker バインディングは書き込み直後の値を一貫して読めるため、カタログが指す版のファイルを先に用意します。公開後は現行版の本文ハッシュとカタログを公開 URL から検証します。
 
 `content/` は表示アプリのテスト用固定データです。本番の文書更新には使いません。アプリの `Deploy policies` は Next.js の静的ファイルと Worker だけを公開し、Markdown と `data/catalog.json` を上書きしません。
 
