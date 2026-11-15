@@ -1,7 +1,8 @@
 import { renderPolicyMarkdown } from "../lib/markdown";
 import type { PolicySlug } from "../lib/policies";
-import { policyList } from "../lib/policies";
+import { policyHistory, policyList } from "../lib/policies";
 import { BreadcrumbItem, BreadcrumbLink, BreadcrumbList, Breadcrumbs } from "./dads/Breadcrumbs";
+import { Button } from "./dads/Button";
 import { Disclosure, DisclosureSummary } from "./dads/Disclosure";
 import { Heading, HeadingTitle } from "./dads/Heading";
 import { Link } from "./dads/Link";
@@ -15,7 +16,6 @@ type Policy = {
   revisionDate?: string;
   markdownPath: string;
   source: string;
-  versions: string[];
 };
 
 export function PolicyView({ policy }: { policy: Policy }) {
@@ -32,13 +32,26 @@ export function PolicyView({ policy }: { policy: Policy }) {
       </Breadcrumbs>
       <div className="document-shell">
         <article className="document">
-          <div className="eyebrow">TASKLY POLICY</div>
           <div className="edition-line">
             <span className="edition-pill">{policy.current ? "現行版" : "保存版"}</span>
             <span>版 {policy.version}</span>
             {policy.effectiveDate && <span>施行日 {policy.effectiveDate}</span>}
             {policy.revisionDate && <span>改訂日 {policy.revisionDate}</span>}
           </div>
+          <nav className="document-actions" aria-label="文書のリンク">
+            <Button asChild size="sm" variant="outline">
+              <a href={`/${policy.slug}/`}>現行版</a>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <a href={`/${policy.slug}/${policy.version}/`}>この版の固定 URL</a>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <a href={policy.markdownPath}>Markdown で読む</a>
+            </Button>
+            <Button asChild size="sm" variant="outline">
+              <a href={`/${policy.slug}/history/`}>改定履歴</a>
+            </Button>
+          </nav>
           <Disclosure className="mobile-toc">
             <DisclosureSummary>目次を開く</DisclosureSummary>
             <ol>
@@ -52,25 +65,21 @@ export function PolicyView({ policy }: { policy: Policy }) {
           {/* The committed Markdown is hash verified and markdown-it disables embedded HTML. */}
           {/* biome-ignore lint/security/noDangerouslySetInnerHtml: The renderer escapes source HTML. */}
           <div className="policy-content" dangerouslySetInnerHTML={{ __html: html }} />
-          <section className="document-tools" aria-label="版と形式">
+          <section className="document-tools" aria-label="改定履歴">
             <Heading size="18" className="site-heading">
-              <HeadingTitle level="h2">この文書の版</HeadingTitle>
+              <HeadingTitle level="h2">改定履歴</HeadingTitle>
             </Heading>
-            <p>現行版へのリンクと保存版の URL を使い分けられます。</p>
-            <div className="document-links">
-              <Link href={`/${policy.slug}/`}>現行版</Link>
-              <Link href={`/${policy.slug}/${policy.version}/`}>この版の固定 URL</Link>
-              <Link href={policy.markdownPath}>Markdown で読む</Link>
-            </div>
-            {policy.versions.length > 1 && (
-              <ul className="version-list">
-                {policy.versions.map((version) => (
-                  <li key={version}>
-                    <Link href={`/${policy.slug}/${version}/`}>{version}</Link>
-                  </li>
-                ))}
-              </ul>
-            )}
+            <ul className="version-list">
+              {policyHistory(policy.slug).map((entry) => (
+                <li key={entry.version}>
+                  <Link href={`/${policy.slug}/${entry.version}/`}>{entry.version}</Link>
+                  {entry.current && <span className="edition-pill">現行版</span>}
+                  {entry.previousVersion && (
+                    <Link href={`/${policy.slug}/history/${entry.version}/`}>前の版との差分</Link>
+                  )}
+                </li>
+              ))}
+            </ul>
           </section>
         </article>
         <aside className="document-aside" aria-label="ページ内目次">

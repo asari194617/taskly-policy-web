@@ -31,4 +31,10 @@ describe("policy Markdown presentation", () => {
     );
     expect(presentationMarkdown(source)).toContain("# Policy\n\n2026年9月23日改訂");
   });
+
+  it("hides empty Notion blocks in the rendered page", () => {
+    const result = renderPolicyMarkdown("# Policy\n\n<empty-block/>\n\n## Details");
+    expect(result.html).not.toContain("empty-block");
+    expect(result.html).toContain("Details");
+  });
 });

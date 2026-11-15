@@ -13,11 +13,9 @@ export default function Home() {
   const policies = policyList();
   return (
     <main id="main" className="home-main">
-      <div className="eyebrow">POLICIES</div>
       <Heading size="36" className="site-heading">
         <HeadingTitle level="h1">Taskly の規約とポリシー</HeadingTitle>
       </Heading>
-      <p className="home-intro">現在公開している文書と、版を固定した保存版を確認できます。</p>
       <nav aria-label="ポリシー一覧">
         <ul className="policy-index">
           {policies.map((policy, index) => (
@@ -38,11 +36,6 @@ export default function Home() {
           ))}
         </ul>
       </nav>
-      <p className="source-note">
-        文書の改定履歴は{" "}
-        <Link href="https://github.com/asari194617/taskly-policy">taskly-policy</Link>{" "}
-        で管理しています。
-      </p>
     </main>
   );
 }

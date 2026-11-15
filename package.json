@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "node scripts/verify-content.mjs && next build && node scripts/publish-markdown.mjs",
+    "build": "node scripts/verify-content.mjs && next build --webpack && node scripts/publish-markdown.mjs",
     "start": "node scripts/serve-out.mjs",
     "typecheck": "tsc --noEmit",
     "lint": "biome check .",
@@ -17,6 +17,7 @@
   },
   "dependencies": {
     "@digital-go-jp/design-tokens": "2.1.0",
+    "diff": "9.0.0",
     "markdown-it": "14.3.3",
     "next": "16.4.6",
     "react": "19.3.1",

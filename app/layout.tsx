@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import type { ReactNode } from "react";
 import { Link } from "../components/dads/Link";
-import { ThemeToggle } from "../components/theme-toggle";
 import "@digital-go-jp/design-tokens/dist/tokens-simple.css";
 import "./styles.css";
 
@@ -14,10 +14,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="ja" suppressHydrationWarning>
+    <html lang="ja">
       <head>
         <meta name="color-scheme" content="light dark" />
-        <script src="/theme-init.js" />
       </head>
       <body>
         <a className="skip-link" href="#main">
@@ -26,14 +25,15 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <header className="site-header">
           <div className="header-inner">
             <a className="brand" href="/" aria-label="Taskly ポリシー トップ">
-              <span className="brand-mark" aria-hidden="true">
-                T
-              </span>
-              <span>
-                Taskly <span className="brand-secondary">ポリシー</span>
-              </span>
+              <Image
+                className="brand-logo"
+                src="/taskly-logo.svg"
+                width={558}
+                height={160}
+                alt=""
+              />
+              <span className="brand-secondary">ポリシー</span>
             </a>
-            <ThemeToggle />
           </div>
         </header>
         {children}
@@ -41,7 +41,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
           <div className="footer-inner">
             <span>© Taskly</span>
             <Link href="https://taskly.iy0306.com/">Taskly に戻る</Link>
-            <Link href="https://github.com/asari194617/taskly-policy">原文と版管理</Link>
+            <Link href="https://github.com/asari194617/taskly-policy">GitHub</Link>
           </div>
         </footer>
       </body>
