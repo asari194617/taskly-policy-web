@@ -41,7 +41,7 @@ for (const [slug, document] of Object.entries(catalog.documents)) {
       throw new Error(`${slug}@${version}: Markdown content type missing`);
     }
     const digest = createHash("sha256")
-      .update(await response.arrayBuffer())
+      .update(Buffer.from(await response.arrayBuffer()))
       .digest("hex");
     if (digest !== edition.publishedSha256)
       throw new Error(`${slug}@${version}: published hash mismatch`);
