@@ -54,6 +54,7 @@ for (const slug of slugs) {
       expect(markdown.status()).toBe(200);
       expect(markdown.headers()["content-type"]).toContain("text/markdown");
       expect(await markdown.text()).toContain(`# ${catalog.documents[slug].title}`);
+      expect(await markdown.text()).not.toContain("<empty-block/>");
       expect(markdown.headers()["x-robots-tag"]).toContain("noindex");
     });
   }
@@ -123,4 +124,9 @@ test("capture review screenshots", async ({ page, isMobile }) => {
   await page.screenshot({ path: `docs/screenshots/${prefix}-privacy.png`, fullPage: true });
   await page.goto("/privacy/history/2026-09-23.1/");
   await page.screenshot({ path: `docs/screenshots/${prefix}-diff.png`, fullPage: false });
+  await page.goto("/security/2026-09-22.1.md");
+  await page.screenshot({
+    path: `docs/screenshots/${prefix}-security-markdown.png`,
+    fullPage: false,
+  });
 });
