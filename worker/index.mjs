@@ -15,7 +15,12 @@ export default {
       });
     }
 
-    const path = new URL(request.url).pathname;
+    const url = new URL(request.url);
+    const path = url.pathname;
+    const requestedVersions = url.searchParams.getAll("v");
+    if (requestedVersions.length && !/^\/[a-z][a-z0-9-]*\/?$/.test(path)) {
+      return new Response("Invalid version URL", { status: 400, headers: sharedHeaders });
+    }
     const requestedKey = objectKey(path);
     if (requestedKey === null)
       return new Response("Bad Request", { status: 400, headers: sharedHeaders });
@@ -32,6 +37,27 @@ export default {
         if (!catalogObject)
           return new Response("Service Unavailable", { status: 503, headers: sharedHeaders });
         const catalog = await catalogObject.json();
+        if (requestedVersions.length) {
+          if (requestedVersions.length !== 1) {
+            return new Response("Invalid version URL", { status: 400, headers: sharedHeaders });
+          }
+          const slug = path.split("/").filter(Boolean)[0];
+          const version = requestedVersions[0];
+          if (!/^[A-Za-z0-9][A-Za-z0-9._-]*$/.test(version)) {
+            return new Response("Invalid version", { status: 400, headers: sharedHeaders });
+          }
+          if (!Object.hasOwn(catalog.documents?.[slug]?.versions ?? {}, version)) {
+            return notFound(request, env);
+          }
+          return new Response(null, {
+            status: 308,
+            headers: {
+              ...sharedHeaders,
+              Location: `/${slug}/${version}/`,
+              "Cache-Control": "no-store",
+            },
+          });
+        }
         if (path === "/llms.txt") {
           const base = new URL(request.url).origin;
           const lines = [

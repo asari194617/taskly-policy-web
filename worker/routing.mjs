@@ -17,15 +17,20 @@ export function policyRoute(pathname, catalog) {
     const slug = parts[0].slice(0, -3);
     if (slugPattern.test(slug) && pathname === `/${slug}.md`) {
       const version = catalog.current?.[slug];
-      return version && catalog.documents?.[slug]?.versions?.[version]
+      return version && Object.hasOwn(catalog.documents?.[slug]?.versions ?? {}, version)
         ? { key: `${slug}/${version}.md`, currentAlias: true }
         : { missing: true };
     }
   }
   if (!slugPattern.test(parts[0] ?? "")) return null;
   const slug = parts[0];
-  const document = catalog.documents?.[slug];
-  if (!document || !catalog.current?.[slug]) return { missing: true };
+  if (
+    !Object.hasOwn(catalog.documents ?? {}, slug) ||
+    !Object.hasOwn(catalog.current ?? {}, slug)
+  ) {
+    return { missing: true };
+  }
+  const document = catalog.documents[slug];
   if (parts.length === 1 && !pathname.endsWith(".md")) {
     return { key: "viewer/index.html" };
   }
@@ -34,11 +39,15 @@ export function policyRoute(pathname, catalog) {
   }
   if (parts.length === 2 && parts[1].endsWith(".md") && !pathname.endsWith("/")) {
     const version = parts[1].slice(0, -3);
-    return versionPattern.test(version) && document.versions?.[version]
+    return versionPattern.test(version) && Object.hasOwn(document.versions ?? {}, version)
       ? { key: `${slug}/${version}.md` }
       : { missing: true };
   }
-  if (parts.length === 2 && versionPattern.test(parts[1]) && document.versions?.[parts[1]]) {
+  if (
+    parts.length === 2 &&
+    versionPattern.test(parts[1]) &&
+    Object.hasOwn(document.versions ?? {}, parts[1])
+  ) {
     return { key: "viewer/index.html" };
   }
   if (parts.length === 3 && parts[1] === "history") {

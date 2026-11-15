@@ -137,6 +137,33 @@ describe("R2 Worker responses", () => {
     expect(markdown.headers.get("Cache-Control")).toBe("no-store");
   });
 
+  it("accepts v query URLs and rejects ambiguous or unknown versions", async () => {
+    const store = bucket({
+      "data/catalog.json": JSON.stringify(catalog),
+      "404.html": "missing",
+    });
+    const env = { POLICY_ASSETS: store };
+    const query = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/terms/?v=v1"),
+      env,
+    );
+    expect(query.status).toBe(308);
+    expect(query.headers.get("Location")).toBe("/terms/v1/");
+    expect(query.headers.get("X-Robots-Tag")).toBe("noindex");
+    const unknown = await worker.fetch(
+      new Request("https://policies.taskly.iy0306.com/terms/?v=v2"),
+      env,
+    );
+    expect(unknown.status).toBe(404);
+    for (const path of ["/terms/?v=", "/terms/?v=v1&v=v2", "/terms/v1/?v=v1", "/?v=v1"]) {
+      const invalid = await worker.fetch(
+        new Request(`https://policies.taskly.iy0306.com${path}`),
+        env,
+      );
+      expect(invalid.status).toBe(400);
+    }
+  });
+
   it("serves the live catalog, dynamically generated AI index, and diff routes", async () => {
     const updated = {
       current: { terms: "v2", notice: "v1" },
