@@ -37,4 +37,12 @@ describe("policy Markdown presentation", () => {
     expect(result.html).not.toContain("empty-block");
     expect(result.html).toContain("Details");
   });
+
+  it("marks external links and does not render unapproved images", () => {
+    const result = renderPolicyMarkdown(
+      "# Policy\n\n[Source](https://github.com/example/repo)\n\n![tracking](https://example.com/x.png)",
+    );
+    expect(result.html).toContain('rel="noopener noreferrer"');
+    expect(result.html).not.toContain("<img");
+  });
 });

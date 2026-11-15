@@ -31,15 +31,14 @@ export function policyRoute(pathname, catalog) {
   }
   if (!slugPattern.test(parts[0] ?? "")) return null;
   const slug = parts[0];
-  if (
-    !Object.hasOwn(catalog.documents ?? {}, slug) ||
-    !Object.hasOwn(catalog.current ?? {}, slug)
-  ) {
+  if (!Object.hasOwn(catalog.documents ?? {}, slug)) {
     return { missing: true };
   }
   const document = catalog.documents[slug];
   if (parts.length === 1 && !pathname.endsWith(".md")) {
-    return { key: "viewer/index.html" };
+    return Object.hasOwn(catalog.current ?? {}, slug)
+      ? { key: "viewer/index.html" }
+      : { missing: true };
   }
   if (parts.length === 2 && parts[1] === "history") {
     return { key: "viewer/index.html" };

@@ -113,7 +113,7 @@ export function compileReleaseSnapshots(snapshots, readFile, now = new Date()) {
       }
       document.versions[revision] = edition;
       files.set(path, source);
-      releasePolicies.push({ slug, revision, changed });
+      releasePolicies.push({ slug, title, description, revision, changed });
     }
     releases.push({
       version: release.tag_name,
@@ -136,6 +136,13 @@ export function compileReleaseSnapshots(snapshots, readFile, now = new Date()) {
   const current = Object.fromEntries(
     newest[0].policies.map(({ slug, revision }) => [slug, revision]),
   );
+  const currentManifest = ordered.find(
+    (snapshot) => snapshot.release.tag_name === newest[0].version,
+  )?.manifest;
+  if (!currentManifest) throw new Error("Current Release manifest is missing");
+  for (const policy of currentManifest.policies) {
+    documents[policy.slug].title = policy.title;
+  }
   const upcoming = releases
     .filter((release) => release.status === "upcoming")
     .sort((left, right) => Date.parse(left.effectiveAt) - Date.parse(right.effectiveAt));

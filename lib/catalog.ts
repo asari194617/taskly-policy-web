@@ -14,7 +14,13 @@ export type PolicyRelease = {
   publishedAt: string;
   effectiveAt: string;
   sourceSha: string;
-  policies: { slug: string; revision: string; changed: boolean }[];
+  policies: {
+    slug: string;
+    title?: string;
+    description?: string;
+    revision: string;
+    changed: boolean;
+  }[];
 };
 
 export type Catalog = {
@@ -30,7 +36,7 @@ export function isPolicySlug(value: string): value is PolicySlug {
 }
 
 export function policyList(catalog: Catalog) {
-  return Object.keys(catalog.documents).map((slug) => {
+  return Object.keys(catalog.current).map((slug) => {
     const version = catalog.current[slug];
     const document = catalog.documents[slug];
     return {
