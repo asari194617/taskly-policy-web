@@ -99,7 +99,7 @@ button {
   margin-inline: auto;
 }
 .header-inner {
-  min-height: 78px;
+  min-height: 64px;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -560,7 +560,7 @@ button {
     width: min(100% - 32px, 100%);
   }
   .header-inner {
-    min-height: 66px;
+    min-height: 60px;
   }
   .brand {
     font-size: 13px;
