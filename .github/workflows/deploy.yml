@@ -93,16 +93,16 @@ jobs:
         run: |
           node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs';
-          import { createHash } from 'node:crypto';
 
           const base = 'https://policies.taskly.iy0306.com';
           const catalog = JSON.parse(readFileSync('content/catalog.json', 'utf8'));
           const routes = [{ path: '/' }, { path: '/llms.txt' }];
           for (const [slug, document] of Object.entries(catalog.documents)) {
             routes.push({ path: `/${slug}/` });
-            for (const [version, edition] of Object.entries(document.versions)) {
+            routes.push({ path: `/${slug}.md`, outputFile: `out/${slug}.md` });
+            for (const version of Object.keys(document.versions)) {
               routes.push({ path: `/${slug}/${version}/` });
-              routes.push({ path: `/${slug}/${version}.md`, sha256: edition.sha256 });
+              routes.push({ path: `/${slug}/${version}.md`, outputFile: `out/${slug}/${version}.md` });
             }
           }
           const pause = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -127,16 +127,17 @@ jobs:
           }
           for (const route of routes) {
             const response = await read(route.path);
-            if (route.sha256) {
+            if (route.outputFile) {
               if (!response.headers.get('content-type')?.includes('text/markdown')) {
                 throw Error(`${route.path}: Markdown content type missing`);
               }
               const body = Buffer.from(await response.arrayBuffer());
-              const actual = createHash('sha256').update(body).digest('hex');
-              if (actual !== route.sha256) throw Error(`${route.path}: source hash mismatch`);
+              if (!body.equals(readFileSync(route.outputFile))) {
+                throw Error(`${route.path}: published Markdown mismatch`);
+              }
             }
             console.log(`Verified ${route.path}`);
           }
           await read('/does-not-exist/', 404);
-          console.log(`Verified ${routes.length} public routes, all policy hashes, and 404`);
+          console.log(`Verified ${routes.length} public routes, published Markdown, and 404`);
           NODE
