@@ -50,6 +50,7 @@ for (const slug of slugs) {
         page.getByRole("heading", { name: catalog.documents[slug].title, level: 1 }),
       ).toBeVisible();
       await expect(page.getByText(`版 ${version}`)).toBeVisible();
+      await expect(page).toHaveTitle(new RegExp(catalog.documents[slug].title));
       const markdown = await request.get(`/${slug}/${version}.md`);
       expect(markdown.status()).toBe(200);
       expect(markdown.headers()["content-type"]).toContain("text/markdown");
@@ -85,6 +86,7 @@ test("history opens a diff against the previous version", async ({ page }) => {
   await expect(page.getByRole("heading", { name: "プライバシーポリシーの改定履歴" })).toBeVisible();
   await page.getByRole("link", { name: "前の版との差分を見る" }).click();
   await expect(page.getByRole("heading", { name: "版 2026-09-23.1 の変更" })).toBeVisible();
+  await expect(page).toHaveTitle(/プライバシーポリシー 2026-09-23.1の変更/);
   await expect(
     page.getByRole("region", { name: "Markdown の変更差分" }).locator(".diff-added").first(),
   ).toBeVisible();
@@ -123,6 +125,7 @@ test("capture review screenshots", async ({ page, isMobile }) => {
   await page.screenshot({ path: `docs/screenshots/${prefix}-focus.png`, fullPage: false });
   await page.goto("/privacy/");
   await expect(page.getByRole("heading", { name: "プライバシーポリシー", level: 1 })).toBeVisible();
+  await page.screenshot({ path: `docs/screenshots/${prefix}-runtime-title.png`, fullPage: false });
   await page.screenshot({ path: `docs/screenshots/${prefix}-privacy.png`, fullPage: true });
   await page.screenshot({ path: `docs/screenshots/${prefix}-runtime-privacy.png`, fullPage: true });
   await page.goto("/privacy/history/2026-09-23.1/");
