@@ -20,11 +20,15 @@ jobs:
       - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
           node-version: 26.13.1
+      - name: Generate expected published Markdown
+        run: |
+          mkdir -p out
+          node scripts/verify-content.mjs
+          node scripts/publish-markdown.mjs
       - name: Check public policy routes and search exclusion
         run: |
           node --input-type=module <<'NODE'
           import { readFileSync } from 'node:fs';
-          import { createHash } from 'node:crypto';
 
           const base = 'https://policies.taskly.iy0306.com';
           const catalog = JSON.parse(readFileSync('content/catalog.json', 'utf8'));
@@ -32,7 +36,8 @@ jobs:
           for (const [slug, document] of Object.entries(catalog.documents)) {
             const version = catalog.current[slug];
             routes.push({path: `/${slug}/`});
-            routes.push({path: `/${slug}/${version}.md`, sha256: document.versions[version].sha256});
+            routes.push({path: `/${slug}.md`, outputFile: `out/${slug}.md`});
+            routes.push({path: `/${slug}/${version}.md`, outputFile: `out/${slug}/${version}.md`});
           }
           async function probe(path, expectedStatus = 200) {
             let lastError;
@@ -55,13 +60,14 @@ jobs:
           }
           for (const route of routes) {
             const response = await probe(route.path);
-            if (route.sha256) {
+            if (route.outputFile) {
               if (!response.headers.get('content-type')?.includes('text/markdown')) {
                 throw Error(`${route.path}: Markdown content type missing`);
               }
-              const actual = createHash('sha256')
-                .update(Buffer.from(await response.arrayBuffer())).digest('hex');
-              if (actual !== route.sha256) throw Error(`${route.path}: source hash mismatch`);
+              const actual = Buffer.from(await response.arrayBuffer());
+              if (!actual.equals(readFileSync(route.outputFile))) {
+                throw Error(`${route.path}: published Markdown mismatch`);
+              }
             }
             console.log(`Healthy ${route.path}`);
           }
@@ -96,7 +102,7 @@ jobs:
                   issue_number: existing.number, body: `The production probe failed again: ${run}`});
               } else {
                 await github.rest.issues.create({owner, repo, title,
-                  body: `The scheduled production probe failed. Check HTML, Markdown hashes, noindex headers, and 404 behavior.\n\nRun: ${run}`});
+                  body: `The scheduled production probe failed. Check HTML, published Markdown hashes, noindex headers, and 404 behavior.\n\nRun: ${run}`});
               }
             } else if (existing?.state === 'open') {
               await github.rest.issues.createComment({owner, repo,
