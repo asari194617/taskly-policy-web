@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { type Catalog, policyHistory } from "../lib/catalog";
+import { type Catalog, policyHistory, policyList as publishedPolicyList } from "../lib/catalog";
 import { allPolicyVersions, getPolicy, isPolicySlug, policyList } from "../lib/policies";
 
 describe("policy catalog", () => {
@@ -70,5 +70,40 @@ describe("policy catalog", () => {
       ["2", "1"],
       ["1", null],
     ]);
+  });
+
+  it("uses the current edition's Release description on the home page", () => {
+    const catalog: Catalog = {
+      schemaVersion: 1,
+      current: { terms: "2026-11-16.1" },
+      documents: {
+        terms: {
+          title: "利用規約",
+          versions: {
+            "2026-11-16.1": { file: "versions/2026-11-16.1/terms.md", sha256: "a" },
+          },
+        },
+      },
+      releases: [
+        {
+          version: "v2026-11-16.1",
+          status: "current",
+          publishedAt: "2026-11-16T05:00:00Z",
+          effectiveAt: "2026-11-16T00:00:00+09:00",
+          sourceSha: "a".repeat(40),
+          policies: [
+            {
+              slug: "terms",
+              revision: "2026-11-16.1",
+              changed: true,
+              description: "Tasklyの各サービスに共通する利用条件を定めます。",
+            },
+          ],
+        },
+      ],
+    };
+    expect(publishedPolicyList(catalog)[0].description).toBe(
+      "Tasklyの各サービスに共通する利用条件を定めます。",
+    );
   });
 });

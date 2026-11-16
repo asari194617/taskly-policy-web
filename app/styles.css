@@ -167,7 +167,12 @@ button {
   font-size: clamp(28px, 5vw, 40px);
   line-height: 1.35;
   letter-spacing: -0.035em;
+  margin: 0 0 18px;
+}
+.home-intro {
   margin: 0 0 42px;
+  color: var(--muted);
+  line-height: 1.7;
 }
 .policy-index {
   list-style: none;

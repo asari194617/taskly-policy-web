@@ -1,6 +1,6 @@
 # Taskly ポリシー
 
-Taskly の利用規約・プライバシーポリシー・セキュリティポリシー・継続性声明を公開する、Next.js 静的サイトです。公開先は `https://policies.taskly.iy0306.com/` です。
+Taskly の各サービスに関する利用規約・プライバシーポリシー・セキュリティポリシー・継続性声明を公開する、Next.js 静的サイトです。適用範囲と施行日は各文書に示します。公開先は `https://policies.taskly.iy0306.com/` です。
 
 - 本文と版管理の出典: [taskly-policy](https://github.com/asari194617/taskly-policy)
 - 静的配信: Next.js の共通画面を R2 に置き、Worker が URL を解決します。規約本文と版一覧は R2 の別データとして公開します。
