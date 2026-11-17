@@ -8,7 +8,7 @@ import "./styles.css";
 export const metadata: Metadata = {
   metadataBase: new URL("https://policies.taskly.iy0306.com"),
   title: { default: "Taskly ポリシー", template: "%s | Taskly ポリシー" },
-  description: "Taskly の利用規約と各種ポリシーの公開版・保存版。",
+  description: "Tasklyのサービスに関する規約とポリシーの公開版・保存版。",
   robots: { index: false, follow: true },
 };
 
@@ -46,7 +46,7 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <footer className="site-footer">
           <div className="footer-inner">
             <span>© Taskly</span>
-            <Link href="https://taskly.iy0306.com/">Taskly に戻る</Link>
+            <Link href="https://taskly.iy0306.com/">課題管理サービスへ</Link>
             <Link href="https://github.com/asari194617/taskly-policy">GitHub</Link>
           </div>
         </footer>

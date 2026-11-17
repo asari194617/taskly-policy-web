@@ -6,8 +6,8 @@ import { policyList } from "../lib/catalog";
 import { useCatalog } from "../lib/use-catalog";
 
 const summaries: Record<string, string> = {
-  terms: "Taskly の利用条件を定めます。",
-  privacy: "個人情報の取扱いを定めます。",
+  terms: "Tasklyの利用条件を定めます。",
+  privacy: "個人情報の取扱いを説明します。",
   security: "情報セキュリティに関する基本方針です。",
   continuity: "サービスを継続して提供するための方針です。",
 };
@@ -19,6 +19,9 @@ export default function Home() {
       <Heading size="36" className="site-heading">
         <HeadingTitle level="h1">Taskly の規約とポリシー</HeadingTitle>
       </Heading>
+      <p className="home-intro">
+        Tasklyのサービスに関する文書を掲載しています。適用範囲と施行日は各文書をご確認ください。
+      </p>
       {error && (
         <p role="alert">文書一覧を読み込めませんでした。ページを再読み込みしてください。</p>
       )}
@@ -34,7 +37,9 @@ export default function Home() {
                   </span>
                   <span className="index-copy">
                     <strong>{policy.title}</strong>
-                    <span>{summaries[policy.slug]}</span>
+                    <span>
+                      {policy.description ?? summaries[policy.slug] ?? "文書の詳細を見る"}
+                    </span>
                   </span>
                   <span className="index-arrow" aria-hidden="true">
                     →

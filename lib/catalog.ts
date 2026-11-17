@@ -39,9 +39,15 @@ export function policyList(catalog: Catalog) {
   return Object.keys(catalog.current).map((slug) => {
     const version = catalog.current[slug];
     const document = catalog.documents[slug];
+    const description = catalog.releases
+      ?.flatMap((release) => release.policies)
+      .find(
+        (policy) => policy.slug === slug && policy.revision === version && policy.description,
+      )?.description;
     return {
       slug,
       title: document.title,
+      description,
       version,
       effectiveDate: document.versions[version].effectiveDate,
       revisionDate: document.versions[version].revisionDate,
