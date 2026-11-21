@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "predev": "node scripts/prepare-data.mjs content public",
     "dev": "next dev",
     "build": "node scripts/verify-content.mjs && next build --webpack && node scripts/prepare-data.mjs content out",
     "start": "node scripts/serve-out.mjs",
