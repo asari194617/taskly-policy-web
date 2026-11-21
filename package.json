@@ -25,10 +25,10 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.7",
+    "@biomejs/biome": "2.6.8",
     "@cloudflare/vite-plugin": "2.0.0-beta.v.17",
     "@digital-go-jp/tailwind-theme-plugin": "2.0.0",
-    "@playwright/test": "1.65.0",
+    "@playwright/test": "1.65.1",
     "@types/markdown-it": "14.1.2",
     "@types/node": "22.19.9",
     "@types/react": "19.3.0",
