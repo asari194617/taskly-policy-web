@@ -9,6 +9,19 @@ Taskly の各サービスに関する利用規約・プライバシーポリシ�
 - 開発: Node.js 26.13.1、`npm ci`、`npm run dev`
 - 検証: `npm run test:all`
 
+## ローカル開発
+
+[Taskly 共通の HTTPS 手順](https://github.com/asari194617/taskly/blob/main/docs/local-development.md#local-https) で `/etc/hosts`、開発 CA、Caddy をセットアップします。このリポジトリで次を実行し、[ローカル規約サイト](https://local.policies.taskly.iy0306.com/) を開きます。
+
+```sh
+npm ci
+npm run dev -- --hostname 127.0.0.1 --port 3001
+```
+
+開発サーバーはチェックアウト内の `content/` を使います。規約公開用の R2 設定は不要です。
+
+## 版の公開と運用
+
 規約の版を追加・切り替えるとき、表示アプリの再ビルドや Worker の再デプロイは不要です。`taskly-policy` の GitHub Release と tag 内の `manifest.json` が版管理の正本です。公開イベントを受けると、各 tag のコミットSHAと本文を検証し、R2 の表示用データを更新します。失敗時は直前の正常データを維持し、定期照合または手動実行で復旧します。
 
 本文の更新、公開、監視、保存版の扱いは [docs/operations.md](docs/operations.md) を参照してください。協力方法は [CONTRIBUTING.md](CONTRIBUTING.md)、脆弱性の報告は [SECURITY.md](SECURITY.md) に記載しています。
