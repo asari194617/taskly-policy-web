@@ -2,6 +2,9 @@
   "name": "taskly-policy-web",
   "version": "0.1.0",
   "private": true,
+  "workspaces": [
+    "worker"
+  ],
   "type": "module",
   "scripts": {
     "predev": "node scripts/prepare-data.mjs content public",
@@ -25,22 +28,22 @@
     "react-dom": "19.3.1"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.6.7",
-    "@cloudflare/vite-plugin": "2.0.0-beta.v.17",
+    "@biomejs/biome": "2.6.8",
+    "@cloudflare/vite-plugin": "2.0.0-rc.1",
     "@digital-go-jp/tailwind-theme-plugin": "2.0.0",
-    "@playwright/test": "1.65.0",
+    "@playwright/test": "1.65.1",
     "@types/markdown-it": "14.1.2",
     "@types/node": "22.19.9",
     "@types/react": "19.3.0",
     "@types/react-dom": "19.3.0",
-    "@vitest/coverage-v8": "4.1.12",
+    "@vitest/coverage-v8": "5.1.1",
     "autoprefixer": "10.6.2",
-    "cf": "1.0.0-beta.32",
+    "cf": "1.0.0-rc.1",
     "postcss": "8.5.33",
     "tailwindcss": "3.4.19",
-    "typescript": "5.9.3",
+    "typescript": "7.0.2",
     "vite": "7.3.8",
-    "vitest": "4.1.12"
+    "vitest": "5.1.1"
   },
   "engines": {
     "node": ">=26.12.0 <27"

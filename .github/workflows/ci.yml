@@ -77,7 +77,8 @@ jobs:
               owner, repo, pull_number: number, per_page: 100,
             });
             const changesProduct = files.some(({filename}) =>
-              /^(app|components|content|lib|public|worker)\//.test(filename) ||
+              /^(app|components|content|lib|public)\//.test(filename) ||
+              (/^worker\//.test(filename) && filename !== 'worker/package.json') ||
               (/^scripts\//.test(filename) &&
                !/^scripts\/(probe-live|check-data-update|report-ci)\.mjs$/.test(filename)));
             if (!changesProduct) return;
