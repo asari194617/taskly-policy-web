@@ -13,3 +13,5 @@ pr.json
 .env
 .env.*
 !.env.example
+/public/data/
+/public/*/*.md
