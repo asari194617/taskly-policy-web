@@ -54,6 +54,7 @@ jobs:
             try { report = read('ci-report'); }
             catch (error) { core.warning(`Invalid coverage report: ${error}`); }
             const names = ['lines', 'statements', 'branches', 'functions'];
+            const labels = { lines: '行', statements: 'ステートメント', branches: '分岐', functions: '関数' };
             const metrics = report?.metrics || {};
             const e2e = report?.e2e || {};
             const validMetrics = names.every(name => typeof metrics[name] === 'number' &&
@@ -67,20 +68,20 @@ jobs:
               Math.abs(e2e.routeCoveragePercent - 100 * e2e.observedRoutes / e2e.declaredRoutes) <= 0.01;
             const marker = '<!-- taskly-policy-coverage -->';
             const rows = names.map(name => validMetrics
-              ? `| ${name} | ${metrics[name].toFixed(1)}% ${metrics[name] >= 80 ? '✅' : '❌'} | 80% |`
-              : `| ${name} | Unavailable (test/setup failed) | 80% |`);
-            const body = [marker, '### Test coverage', '',
-              '| Unit/component/Worker metric | Measured coverage | Required |',
+              ? `| ${labels[name]} | ${metrics[name].toFixed(1)}% ${metrics[name] >= 80 ? '✅' : '❌'} | 80% |`
+              : `| ${labels[name]} | 計測結果なし（テストまたはセットアップに失敗） | 80% |`);
+            const body = [marker, '### テストカバレッジ', '',
+              '| 単体・コンポーネント・Worker の指標 | カバレッジ | 必須基準 |',
               '| --- | ---: | ---: |', ...rows, '',
               validE2E
-                ? `Chromium E2E: ${e2e.passed} passed, ${e2e.failed} failed, ${e2e.skipped} skipped.`
-                : 'Chromium E2E: Unavailable (test/setup failed).',
+                ? `Chromium E2E は成功 ${e2e.passed} 件、失敗 ${e2e.failed} 件、スキップ ${e2e.skipped} 件でした。`
+                : 'Chromium E2E の結果なし（テストまたはセットアップに失敗）。',
               validE2E
-                ? `Public route checks passed on desktop and mobile: ${e2e.observedRoutes}/${e2e.declaredRoutes} (${e2e.routeCoveragePercent.toFixed(1)}%).`
-                : 'Public route checks: Unavailable (test/setup failed).',
-              'E2E route checks are a scenario metric; they are separate from source-code coverage.',
-              '', `Commit: ${metadata.sha.slice(0, 7)}`,
-              `[CI run](${run.html_url})`].join('\n');
+                ? `デスクトップとモバイルの両方で検証に成功した公開ルートは、全 ${e2e.declaredRoutes} 件中 ${e2e.observedRoutes} 件（${e2e.routeCoveragePercent.toFixed(1)}%）でした。`
+                : '公開ルートの検証結果なし（テストまたはセットアップに失敗）。',
+              '公開ルートの検証は E2E シナリオの達成率です。ソースコードのカバレッジは表に表示しています。',
+              '', `コミット ${metadata.sha.slice(0, 7)} の計測結果です。`,
+              `[CI の実行結果](${run.html_url})`].join('\n');
             const comments = await github.paginate(github.rest.issues.listComments,
               {owner, repo, issue_number: metadata.number, per_page: 100});
             const previous = comments.find(comment =>
